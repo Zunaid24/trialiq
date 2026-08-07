@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import Image from "next/image";
 
 export default function Home() {
@@ -67,3 +68,6 @@ export default function Home() {
     </div>
   );
 }
+=======
+export default function Home(){return <main><h1>TrialIQ AI</h1><p>MVP coming soon.</p></main>}
+>>>>>>> 466cf706d6a83a95abed50c3ca37a2951089e853

@@ -1,0 +1,1 @@
+export const PROMPT=`Clinical trial eligibility analysis prompt`;
