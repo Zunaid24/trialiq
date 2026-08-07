@@ -1,0 +1,1 @@
+export default function Home(){return <main><h1>TrialIQ AI</h1><p>MVP coming soon.</p></main>}
