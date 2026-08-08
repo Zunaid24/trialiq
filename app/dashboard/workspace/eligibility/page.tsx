@@ -1,172 +1,85 @@
 "use client";
 
-import OverviewCard from "@/components/OverviewCard";
-import EvidenceTable from "@/components/EvidenceTable";
-import Recommendations from "@/components/Recommendations";
-import WorkspaceTabs from "@/components/WorkspaceTabs";
 import { useState } from "react";
-import { FileText, UserRound, Sparkles } from "lucide-react";
-import AnalysisReport from "@/components/AnalysisReport";
+import {
+  FileText,
+  UserRound,
+  Sparkles,
+  Loader2,
+  Play,
+} from "lucide-react";
+
 import { extractPdfText } from "@/lib/extractPdfText";
-export default function Home() {
+import AnalysisReport from "@/components/AnalysisReport";
+
+export default function EligibilityPage() {
   const [protocolFile, setProtocolFile] = useState<File | null>(null);
-  const [participantFile, setParticipantFile] = useState<File | null>(null);
+  const [participantFile, setParticipantFile] =
+    useState<File | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<any>(null);
 
-  return (
-    <main className="min-h-screen bg-[#F8FAFC]">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-6 py-16">
+  async function loadDemoCase() {
+    try {
+      setLoading(true);
 
-        {/* Header */}
+      const [protocolResponse, participantResponse] =
+        await Promise.all([
+          fetch("/demo/protocol-demo.pdf"),
+          fetch("/demo/participant-demo.pdf"),
+        ]);
 
-        <div className="text-center">
+      if (!protocolResponse.ok || !participantResponse.ok) {
+        throw new Error("Demo files could not be loaded");
+      }
 
-          <div className="inline-flex items-center gap-2 rounded-full border bg-white px-4 py-2 text-sm shadow-sm">
-            <Sparkles size={16} className="text-blue-600" />
-            AI-powered Clinical Trial Screening Intelligence
-          </div>
+      const [protocolBlob, participantBlob] =
+        await Promise.all([
+          protocolResponse.blob(),
+          participantResponse.blob(),
+        ]);
 
-          <h1 className="mt-8 text-6xl font-bold tracking-tight">
-            TrialIQ AI
-          </h1>
+      const protocol = new File(
+        [protocolBlob],
+        "protocol-demo.pdf",
+        {
+          type: "application/pdf",
+        }
+      );
 
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-gray-600">
-            Upload a Clinical Trial Protocol and a Participant Medical Summary.
-            TrialIQ compares both documents using AI and generates explainable
-            eligibility assessments with research insights.
-          </p>
+      const participant = new File(
+        [participantBlob],
+        "participant-demo.pdf",
+        {
+          type: "application/pdf",
+        }
+      );
 
-        </div>
+      setProtocolFile(protocol);
+      setParticipantFile(participant);
 
-        {/* Upload Cards */}
+      setReport(null);
+    } catch (error) {
+      console.error("Demo loading failed:", error);
+      alert("Unable to load demo case.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-        <div className="mt-16 grid gap-8 md:grid-cols-2">
-
-          <label className="cursor-pointer rounded-3xl border bg-white p-8 shadow-sm transition hover:shadow-md">
-
-            <FileText
-              className="mb-6 text-blue-600"
-              size={40}
-            />
-
-            <h2 className="text-2xl font-semibold">
-              Clinical Trial Protocol
-            </h2>
-
-            <p className="mt-3 text-gray-500">
-              Upload protocol PDF
-            </p>
-
-            <div className="mt-8 rounded-2xl border-2 border-dashed py-16 text-center">
-
-              {protocolFile ? (
-                <div>
-
-                  <p className="font-semibold text-green-600">
-                    ✓ {protocolFile.name}
-                  </p>
-
-                  <p className="mt-2 text-sm text-gray-500">
-                    {(protocolFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-
-                </div>
-              ) : (
-                <div>
-
-                  <p className="text-lg font-medium">
-                    Drop PDF here
-                  </p>
-
-                  <p className="mt-2 text-gray-500">
-                    or click to browse
-                  </p>
-
-                </div>
-              )}
-
-            </div>
-
-            <input
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              onChange={(e) =>
-                setProtocolFile(e.target.files?.[0] ?? null)
-              }
-            />
-
-          </label>
-
-          <label className="cursor-pointer rounded-3xl border bg-white p-8 shadow-sm transition hover:shadow-md">
-
-            <UserRound
-              className="mb-6 text-blue-600"
-              size={40}
-            />
-
-            <h2 className="text-2xl font-semibold">
-              Participant Medical Summary
-            </h2>
-
-            <p className="mt-3 text-gray-500">
-              Upload participant PDF
-            </p>
-
-            <div className="mt-8 rounded-2xl border-2 border-dashed py-16 text-center">
-
-              {participantFile ? (
-                <div>
-
-                  <p className="font-semibold text-green-600">
-                    ✓ {participantFile.name}
-                  </p>
-
-                  <p className="mt-2 text-sm text-gray-500">
-                    {(participantFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-
-                </div>
-              ) : (
-                <div>
-
-                  <p className="text-lg font-medium">
-                    Drop PDF here
-                  </p>
-
-                  <p className="mt-2 text-gray-500">
-                    or click to browse
-                  </p>
-
-                </div>
-              )}
-
-            </div>
-
-            <input
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              onChange={(e) =>
-                setParticipantFile(e.target.files?.[0] ?? null)
-              }
-            />
-
-          </label>
-
-        </div>
-
-       <button
-  disabled={!protocolFile || !participantFile}
-  onClick={async () => {
+  async function handleAnalyze() {
     if (!protocolFile || !participantFile) return;
 
     try {
       setLoading(true);
+      setReport(null);
 
-      const protocolText = await extractPdfText(protocolFile);
-      const participantText = await extractPdfText(participantFile);
+      const protocolText =
+        await extractPdfText(protocolFile);
+
+      const participantText =
+        await extractPdfText(participantFile);
 
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -181,68 +94,251 @@ export default function Home() {
 
       const data = await response.json();
 
-      setLoading(false);
-
-      if (!data.success) {
-        alert(data.message);
-        return;
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Analysis failed"
+        );
       }
 
       setReport(data.result);
     } catch (error) {
+      console.error("Analysis failed:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Analysis failed"
+      );
+    } finally {
       setLoading(false);
-      console.error(error);
     }
-  }}
-  className={`mx-auto mt-12 rounded-2xl px-10 py-4 text-lg font-semibold transition ${
-    protocolFile && participantFile
-      ? "bg-blue-600 text-white hover:bg-blue-700"
-      : "cursor-not-allowed bg-gray-300 text-gray-500"
-  }`}
->
-  Analyze Eligibility
-</button>
-  
+  }
 
-{loading && (
-  <div className="mt-10 rounded-2xl border bg-white p-6 shadow-sm">
-    <h2 className="text-xl font-semibold">
-      AI is analyzing your documents...
-    </h2>
+  return (
+    <main className="min-h-screen bg-slate-50">
 
-    <p className="mt-2 text-gray-500">
-      Comparing protocol, evaluating eligibility and generating insights...
-    </p>
-  </div>
-)}
+      <div className="mx-auto max-w-7xl px-6 py-12">
 
-{report && (
-  <div className="mt-10 space-y-8">
+        {/* Header */}
 
-    <WorkspaceTabs active="overview" />
+        <div className="mb-10">
 
-    <OverviewCard report={report} />
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700">
+            <Sparkles size={16} />
+            AI Eligibility Intelligence
+          </div>
 
-    <EvidenceTable report={report} />
+          <h1 className="mt-5 text-4xl font-bold">
+            Clinical Trial Eligibility
+          </h1>
 
-    <Recommendations report={report} />
+          <p className="mt-3 max-w-3xl text-slate-500">
+            Compare a clinical trial protocol with a
+            participant medical summary and identify
+            eligibility, missing assessments and clinical
+            actions.
+          </p>
 
-  </div>
-)}
+        </div>
 
-      </div><div className="mb-10">
+        {/* Demo */}
 
-    <h1 className="text-4xl font-bold">
-        Eligibility Screening
-    </h1>
+        <div className="mb-8 flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 p-5">
 
-    <p className="mt-3 text-slate-500">
-        AI compares clinical trial protocols with participant records to determine eligibility.
-    </p>
+          <div>
+            <h2 className="font-semibold text-blue-900">
+              Try the TrialIQ demo
+            </h2>
 
-</div>
+            <p className="mt-1 text-sm text-blue-700">
+              Load the sample protocol and participant
+              automatically.
+            </p>
+          </div>
 
-<WorkspaceTabs active="overview" />
+          <button
+            type="button"
+            onClick={loadDemoCase}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Play size={17} />
+
+            Load Demo Case
+          </button>
+
+        </div>
+
+        {/* Upload Cards */}
+
+        <div className="grid gap-6 md:grid-cols-2">
+
+          {/* Protocol */}
+
+          <div className="rounded-3xl border bg-white p-7 shadow-sm">
+
+            <FileText
+              size={36}
+              className="text-blue-600"
+            />
+
+            <h2 className="mt-5 text-xl font-semibold">
+              Clinical Trial Protocol
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Upload the study protocol PDF.
+            </p>
+
+            <label className="mt-6 block cursor-pointer">
+
+              <div className="rounded-2xl border-2 border-dashed p-10 text-center">
+
+                {protocolFile ? (
+                  <>
+                    <p className="font-semibold text-green-600">
+                      ✓ {protocolFile.name}
+                    </p>
+
+                    <p className="mt-2 text-sm text-slate-500">
+                      {(protocolFile.size / 1024 / 1024).toFixed(
+                        2
+                      )}{" "}
+                      MB
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium">
+                      Choose protocol PDF
+                    </p>
+
+                    <p className="mt-2 text-sm text-slate-400">
+                      Click to browse
+                    </p>
+                  </>
+                )}
+
+              </div>
+
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  setProtocolFile(
+                    e.target.files?.[0] ?? null
+                  );
+                  setReport(null);
+                }}
+              />
+
+            </label>
+
+          </div>
+
+          {/* Participant */}
+
+          <div className="rounded-3xl border bg-white p-7 shadow-sm">
+
+            <UserRound
+              size={36}
+              className="text-blue-600"
+            />
+
+            <h2 className="mt-5 text-xl font-semibold">
+              Participant Medical Summary
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Upload the participant medical summary.
+            </p>
+
+            <label className="mt-6 block cursor-pointer">
+
+              <div className="rounded-2xl border-2 border-dashed p-10 text-center">
+
+                {participantFile ? (
+                  <>
+                    <p className="font-semibold text-green-600">
+                      ✓ {participantFile.name}
+                    </p>
+
+                    <p className="mt-2 text-sm text-slate-500">
+                      {(participantFile.size / 1024 / 1024).toFixed(
+                        2
+                      )}{" "}
+                      MB
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium">
+                      Choose participant PDF
+                    </p>
+
+                    <p className="mt-2 text-sm text-slate-400">
+                      Click to browse
+                    </p>
+                  </>
+                )}
+
+              </div>
+
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  setParticipantFile(
+                    e.target.files?.[0] ?? null
+                  );
+                  setReport(null);
+                }}
+              />
+
+            </label>
+
+          </div>
+
+        </div>
+
+        {/* Analyze */}
+
+        <div className="mt-8 flex justify-center">
+
+          <button
+            type="button"
+            disabled={
+              !protocolFile ||
+              !participantFile ||
+              loading
+            }
+            onClick={handleAnalyze}
+            className="flex items-center gap-3 rounded-xl bg-blue-600 px-8 py-4 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {loading ? (
+              <>
+                <Loader2
+                  size={18}
+                  className="animate-spin"
+                />
+                Analyzing...
+              </>
+            ) : (
+              "Analyze Eligibility"
+            )}
+          </button>
+
+        </div>
+
+        {/* Report */}
+
+        {report && (
+          <AnalysisReport report={report} />
+        )}
+
+      </div>
+
     </main>
   );
 }

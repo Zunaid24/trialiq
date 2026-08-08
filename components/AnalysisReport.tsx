@@ -5,194 +5,290 @@ interface Props {
 export default function AnalysisReport({ report }: Props) {
   if (!report) return null;
 
-  const statusColor = report.eligible? "text-green-600"
-  : "text-red-600";
-
   return (
-    <div className="rounded-3xl overflow-hidden bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 p-10 text-white shadow-xl">
+    <div className="mt-12 space-y-8">
 
-  <div>
+      {/* =====================================================
+          SUMMARY / HERO
+      ===================================================== */}
 
-    <span
-      className={`inline-flex rounded-full px-4 py-2 text-sm font-semibold ${
-        report.eligible
-          ? "bg-green-500/20 text-green-100"
-          : "bg-red-500/20 text-red-100"
-      }`}
-    >
-      {report.screeningResult}
-    </span>
+      <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 p-10 text-white shadow-xl">
 
-    <h1 className="mt-6 text-5xl font-bold">
-      {report.studyTitle ?? "Clinical Trial"}
-    </h1>
+        <span
+          className={`inline-flex rounded-full px-4 py-2 text-sm font-semibold ${
+            report.eligible
+              ? "bg-green-500/20 text-green-100"
+              : "bg-red-500/20 text-red-100"
+          }`}
+        >
+          {report.screeningResult ?? "Screening Complete"}
+        </span>
 
-    <p className="mt-5 max-w-3xl text-lg text-blue-100">
-      {report.executiveSummary ??
-        report.reasonForIneligibility}
-    </p>
+        <h1 className="mt-6 text-4xl font-bold">
+          {report.studyTitle ?? "Clinical Trial"}
+        </h1>
 
-  </div>
+        <p className="mt-5 max-w-3xl text-lg text-blue-100">
+          {report.executiveSummary ??
+            report.reasonForIneligibility ??
+            "Clinical trial screening analysis completed."}
+        </p>
 
-  <div className="mt-10 grid grid-cols-4 gap-8">
+        {/* Metrics */}
 
-    <Metric
-      label="Participant"
-      value={report.participantId}
-    />
+        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
 
-    <Metric
-      label="Eligibility"
-      value={report.screeningResult}
-    />
+          <Metric
+            label="Participant"
+            value={report.participantId ?? "--"}
+          />
 
-    <Metric
-      label="Score"
-      value={
-  report.eligibilityScore != null
-    ? `${report.eligibilityScore}%`
-    : "--"
-}
-    />
+          <Metric
+            label="Eligibility"
+            value={report.screeningResult ?? "--"}
+          />
 
-    <Metric
-      label="Confidence"
-      value={
-  report.confidence != null
-    ? `${report.confidence}%`
-    : "--"
-}
-    />
+          <Metric
+            label="Score"
+            value={
+              report.eligibilityScore != null
+                ? `${report.eligibilityScore}%`
+                : "--"
+            }
+          />
 
-  
-
-
-
-</div>
-        
-
-      {/* Reason */}
-
-      <Section title="Primary Finding">
-
-        <div className="rounded-2xl bg-red-50 p-5 border border-red-100">
-
-          <div className="space-y-5">
-
-  <div className="rounded-xl border border-red-200 bg-red-50 p-5">
-
-    <h3 className="font-semibold">
-      Primary Finding
-    </h3>
-
-    <p className="mt-2">
-      {report.reasonForIneligibility}
-    </p>
-
-  </div>
-
-  <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
-
-    <h3 className="font-semibold">
-      Executive Summary
-    </h3>
-
-    <p className="mt-2">
-      {report.executiveSummary}
-    </p>
-
-  </div>
-
-</div>
+          <Metric
+            label="Confidence"
+            value={
+              report.confidence != null
+                ? `${report.confidence}%`
+                : "--"
+            }
+          />
 
         </div>
 
-      </Section>
+      </div>
 
-      {/* Inclusion */}
+      {/* =====================================================
+          PRIMARY FINDING
+      ===================================================== */}
 
-      <Section title="Inclusion Criteria">
+      <Section title="Primary Finding">
 
-        <div className="space-y-3">
-  {report.criteriaEvaluation?.inclusion?.map(
-    (item: any, index: number) => (
-      <Criterion
-        key={index}
-        item={item}
-      />
-    )
-  )}
-</div>
-      </Section>
+        <div className="space-y-4">
 
-      {/* Exclusion */}
+          {report.reasonForIneligibility && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
 
-      <Section title="Exclusion Criteria">
+              <h3 className="font-semibold text-red-900">
+                Reason for Ineligibility
+              </h3>
 
-        <div className="space-y-3">
+              <p className="mt-2 leading-7 text-red-800">
+                {report.reasonForIneligibility}
+              </p>
 
-          {report.criteriaEvaluation?.exclusion?.map(
-            (item: any, index: number) => (
-              <Criterion key={index} item={item} />
-            )
+            </div>
+          )}
+
+          {report.executiveSummary && (
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+
+              <h3 className="font-semibold text-blue-900">
+                Clinical Summary
+              </h3>
+
+              <p className="mt-2 leading-7 text-blue-800">
+                {report.executiveSummary}
+              </p>
+
+            </div>
           )}
 
         </div>
 
       </Section>
 
-      {/* Recommendations */}
+      {/* =====================================================
+          INCLUSION CRITERIA
+      ===================================================== */}
+
+      <Section title="Inclusion Criteria">
+
+        <div className="space-y-3">
+
+          {report.criteriaEvaluation?.inclusion?.length ? (
+            report.criteriaEvaluation.inclusion.map(
+              (item: any, index: number) => (
+                <Criterion
+                  key={index}
+                  item={item}
+                />
+              )
+            )
+          ) : (
+            <p className="text-slate-500">
+              No inclusion criteria available.
+            </p>
+          )}
+
+        </div>
+
+      </Section>
+
+      {/* =====================================================
+          EXCLUSION CRITERIA
+      ===================================================== */}
+
+      <Section title="Exclusion Criteria">
+
+        <div className="space-y-3">
+
+          {report.criteriaEvaluation?.exclusion?.length ? (
+            report.criteriaEvaluation.exclusion.map(
+              (item: any, index: number) => (
+                <Criterion
+                  key={index}
+                  item={item}
+                />
+              )
+            )
+          ) : (
+            <p className="text-slate-500">
+              No exclusion criteria available.
+            </p>
+          )}
+
+        </div>
+
+      </Section>
+
+      {/* =====================================================
+          CLINICAL ACTION ITEMS
+      ===================================================== */}
 
       <Section title="Clinical Action Items">
-  <div className="space-y-4">
 
-    {report.pendingAssessments?.map((item: any, index: number) => (
-      <div
-        key={index}
-        className="rounded-xl border border-yellow-200 bg-yellow-50 p-5"
-      >
-        <h3 className="font-semibold">
-          {item.assessment}
-        </h3>
+        <div className="space-y-4">
 
-        <p className="mt-2 text-sm text-gray-600">
-          {item.clinicalImpact}
-        </p>
+          {report.pendingAssessments?.length ? (
+            report.pendingAssessments.map(
+              (item: any, index: number) => (
+                <div
+                  key={index}
+                  className="rounded-xl border border-yellow-200 bg-yellow-50 p-5"
+                >
 
-        <span className="mt-4 inline-block rounded-full bg-yellow-200 px-3 py-1 text-sm">
-          {item.status}
-        </span>
-      </div>
-    ))}
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 
-  </div>
-</Section>
+                    <div>
+
+                      <h3 className="font-semibold text-slate-900">
+                        {item.assessment}
+                      </h3>
+
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        {item.clinicalImpact}
+                      </p>
+
+                    </div>
+
+                    <span className="w-fit rounded-full bg-yellow-200 px-3 py-1 text-sm font-medium text-yellow-800">
+                      {item.status}
+                    </span>
+
+                  </div>
+
+                </div>
+              )
+            )
+          ) : (
+            <p className="text-slate-500">
+              No pending assessments.
+            </p>
+          )}
+
+        </div>
+
+      </Section>
+
+      {/* =====================================================
+          RECOMMENDATIONS
+      ===================================================== */}
+
+      <Section title="Coordinator Recommendations">
+
+        {report.recommendations?.length ? (
+          <div className="space-y-3">
+
+            {report.recommendations.map(
+              (recommendation: string, index: number) => (
+                <div
+                  key={index}
+                  className="rounded-xl border bg-slate-50 p-4"
+                >
+
+                  <div className="flex gap-3">
+
+                    <span className="font-semibold text-blue-600">
+                      {index + 1}.
+                    </span>
+
+                    <p className="leading-6 text-slate-700">
+                      {recommendation}
+                    </p>
+
+                  </div>
+
+                </div>
+              )
+            )}
+
+          </div>
+        ) : (
+          <p className="text-slate-500">
+            No recommendations available.
+          </p>
+        )}
+
+      </Section>
 
     </div>
   );
 }
 
-function Card({
-  title,
+
+/* ============================================================
+   METRIC
+============================================================ */
+
+function Metric({
+  label,
   value,
-  color = "",
 }: {
-  title: string;
-  value?: string;
-  color?: string;
+  label: string;
+  value: string | number;
 }) {
   return (
-    <div className="rounded-2xl bg-slate-50 p-5">
-      <p className="text-sm text-gray-500">
-        {title}
+    <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
+
+      <p className="text-sm text-blue-100">
+        {label}
       </p>
 
-      <h3 className={`mt-2 text-xl font-bold ${color}`}>
-        {value ?? "-"}
+      <h3 className="mt-2 text-2xl font-bold text-white">
+        {value}
       </h3>
+
     </div>
   );
 }
+
+
+/* ============================================================
+   SECTION
+============================================================ */
 
 function Section({
   title,
@@ -202,86 +298,83 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border bg-white p-8 shadow-sm">
+    <section className="rounded-3xl border bg-white p-8 shadow-sm">
 
-      <h2 className="mb-6 text-2xl font-bold">
+      <h2 className="mb-6 text-2xl font-bold text-slate-900">
         {title}
       </h2>
 
       {children}
 
-    </div>
+    </section>
   );
 }
 
-function Criterion({ item }: any) {
-  let badge =
-    "bg-gray-100 text-gray-700";
 
-  if (item.status.includes("Met"))
-    badge = "bg-green-100 text-green-700";
+/* ============================================================
+   CRITERION
+============================================================ */
 
-  if (item.status.includes("Pending"))
+function Criterion({ item }: { item: any }) {
+  const status = item.status ?? "";
+
+  let badge = "bg-gray-100 text-gray-700";
+
+  if (
+    status.toLowerCase().includes("pending")
+  ) {
     badge = "bg-yellow-100 text-yellow-700";
-
-  if (item.status.includes("Not"))
+  } else if (
+    status.toLowerCase().includes("not met") ||
+    status.toLowerCase().includes("not")
+  ) {
     badge = "bg-red-100 text-red-700";
+  } else if (
+    status.toLowerCase().includes("met")
+  ) {
+    badge = "bg-green-100 text-green-700";
+  }
 
   return (
-    <div className="flex items-center justify-between rounded-xl border p-4">
+    <div className="rounded-xl border p-4">
 
-      <div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
-        <p className="font-medium">
-          {item.criterion}
-        </p>
+        <div className="min-w-0">
 
-        <p className="text-sm text-gray-500">
-  Expected: {item.expected}
-  <br />
-  Actual: {item.actual}
-</p>
+          <p className="font-medium text-slate-900">
+            {item.criterion}
+          </p>
 
-      </div>
+          <div className="mt-2 space-y-1 text-sm text-slate-500">
 
-      <span className={`rounded-full px-3 py-1 text-sm ${badge}`}>
-        {item.status}
-      </span>
+            {item.expected && (
+              <p>
+                <span className="font-medium text-slate-600">
+                  Expected:
+                </span>{" "}
+                {item.expected}
+              </p>
+            )}
 
-    </div>
-  );
-}
-function Metric({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number;
-}) {
-  return (
-    <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-      <p className="text-sm text-blue-100">
-        {label}
-      </p>
+            {item.actual && (
+              <p>
+                <span className="font-medium text-slate-600">
+                  Actual:
+                </span>{" "}
+                {item.actual}
+              </p>
+            )}
 
-      <h3 className="mt-2 text-3xl font-bold text-white">
-        {value}
-      </h3>
-    </div>
-  );
-}
-function ScoreBar({ score }: { score: number }) {
-  return (
-    <div className="mt-4">
+          </div>
 
-      <div className="h-3 overflow-hidden rounded-full bg-slate-200">
+        </div>
 
-        <div
-          className="h-full rounded-full bg-green-500"
-          style={{
-            width: `${score}%`,
-          }}
-        />
+        <span
+          className={`w-fit shrink-0 rounded-full px-3 py-1 text-sm font-medium ${badge}`}
+        >
+          {status || "Unknown"}
+        </span>
 
       </div>
 
