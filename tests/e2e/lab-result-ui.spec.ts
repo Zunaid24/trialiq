@@ -47,7 +47,7 @@ test.describe("TrialIQ Lab Intelligence result UI QA", () => {
     await expect(page.locator("body")).toContainText(/Creatinine/i);
     await expect(page.locator("body")).toContainText(/ALT/i);
     await expect(page.locator("body")).toContainText(/Requires Review/i);
-    await expect(page.locator("body")).toContainText(/evidence/i);
+    await expect(page.locator("body")).toContainText(/Protocol-Relevant Concerns|Follow-up Actions|Missing Laboratory Information/i);
     await expect(page.locator("body")).not.toContainText(/application error|internal server error/i);
 
     await page.screenshot({ path: "test-results/lab-result-ui.png", fullPage: true });
