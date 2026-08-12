@@ -27,15 +27,29 @@ VALUE RULES:
 - Prefer concise decision language over generic clinical prose.
 - Confidence measures evidence completeness and consistency, not probability of clinical truth.
 
-Return ONLY valid JSON.
+Return ONLY valid JSON. No markdown fences, comments, trailing commas, or explanatory text.
 `;
 
 function parseJson(text: string) {
-  const cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+  let cleaned = text.replace(/```json/gi, "").replace(/```/g, "").replace(/\u0000/g, "").trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("Clinical intelligence returned invalid JSON.");
-  return JSON.parse(cleaned.slice(start, end + 1));
+  cleaned = cleaned.slice(start, end + 1);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (firstError) {
+    // Gemini occasionally emits a trailing comma despite responseMimeType=json.
+    // Repair only commas immediately before a closing object/array delimiter; never rewrite clinical content.
+    const repaired = cleaned.replace(/,\s*([}\]])/g, "$1");
+    try {
+      return JSON.parse(repaired);
+    } catch {
+      const position = firstError instanceof SyntaxError ? firstError.message : "unknown JSON parse error";
+      throw new Error(`Clinical intelligence returned malformed JSON: ${position}`);
+    }
+  }
 }
 
 export async function analyzeClinicalIntelligence(evidencePack: unknown) {
