@@ -5,13 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ClipboardCheck,
-  FileSearch,
-  Users,
   FileText,
-  CalendarCheck,
-  ShieldAlert,
-  TriangleAlert,
-  FlaskConical,
   BarChart3,
   Settings,
   Bell,
@@ -55,30 +49,34 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-background">
-
       {/* Sidebar */}
-
       <aside className="w-72 border-r border-border bg-card">
-
-        <div className="border-b border-border p-8">
-
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-brand to-brand-strong font-mono text-sm font-medium text-brand-foreground">
+        {/* Product navigation */}
+        <div className="border-b border-border px-6 py-6">
+          <Link
+            href="/"
+            className="flex w-fit items-center gap-2.5 font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80"
+            aria-label="TrialIQ AI home"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-blue-600 to-blue-800 font-mono text-[11px] font-medium text-white">
               iq
             </span>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              TrialIQ AI
-            </h1>
-          </div>
 
-          <p className="mt-2 text-sm text-muted-foreground">
+            <span className="text-base font-semibold">
+              TrialIQ AI
+            </span>
+
+            <span className="ml-0.5 rounded border border-slate-300 px-1.5 py-0.5 font-mono text-[9px] font-medium text-slate-500">
+              MVP
+            </span>
+          </Link>
+
+          <p className="mt-2 pl-10 text-xs text-muted-foreground">
             Clinical AI Platform
           </p>
-
         </div>
 
         <nav className="space-y-1 p-4">
-
           {menu.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -97,71 +95,51 @@ export default function DashboardLayout({
                 }`}
               >
                 <Icon size={18} />
-
                 {item.title}
               </Link>
             );
           })}
-
         </nav>
-
       </aside>
 
       {/* Main */}
-
       <div className="flex flex-1 flex-col">
-
         {/* Topbar */}
-
         <header className="flex items-center justify-between border-b border-border bg-card px-8 py-4">
-
           <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm">
-
             <Search size={16} className="text-muted-foreground" />
-
             <input
               placeholder="Search participants, protocols, sites…"
               className="w-64 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
-
           </div>
 
           <div className="flex items-center gap-4">
-
             <button className="rounded-lg border border-border p-2.5 text-muted-foreground transition hover:text-foreground">
               <Bell size={17} />
             </button>
 
             <div className="flex items-center gap-3 border-l border-border pl-4">
-
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand font-mono text-sm font-medium text-brand-foreground">
                 A
               </div>
 
               <div>
-
                 <p className="text-sm font-semibold text-foreground">
                   Admin
                 </p>
-
                 <p className="text-xs text-muted-foreground">
                   Clinical Research
                 </p>
-
               </div>
-
             </div>
-
           </div>
-
         </header>
 
         <main className="flex-1 p-8">
           {children}
         </main>
-
       </div>
-
     </div>
   );
 }
