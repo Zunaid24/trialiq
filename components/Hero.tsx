@@ -14,7 +14,7 @@ export default function Hero() {
     <>
       <section
         id="platform"
-        className="bg-slate-50 px-5 pb-16 pt-[76px] md:px-8"
+        className="bg-slate-50 px-5 pb-12 pt-[60px] md:px-8"
       >
         <div className="mx-auto max-w-[1180px]">
 
@@ -27,7 +27,7 @@ export default function Hero() {
 
           {/* HERO */}
 
-          <div className="mt-7 grid items-center gap-12 lg:grid-cols-[1fr_0.9fr]">
+          <div className="mt-6 grid items-center gap-10 lg:grid-cols-[0.95fr_1fr]">
 
             <div>
 
@@ -124,7 +124,6 @@ export default function Hero() {
                         248 pages · uploaded just now
                       </p>
                     </div>
-
                   </div>
 
                   <span className="rounded-full bg-green-50 px-2.5 py-1 font-mono text-[10px] font-medium text-green-700">
