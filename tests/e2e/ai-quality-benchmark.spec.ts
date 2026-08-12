@@ -4,7 +4,7 @@ type Intelligence = any;
 let result: Intelligence;
 
 // This suite intentionally focuses on AI output quality rather than navigation or button mechanics.
-// One live model call feeds 20 independent quality gates.
+// One live model call feeds 25 independent quality gates.
 test.describe("TrialIQ AI output quality benchmark", () => {
   test.beforeAll(async () => {
     const api = await playwrightRequest.newContext({ baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000" });
@@ -59,4 +59,30 @@ test.describe("TrialIQ AI output quality benchmark", () => {
   test("18 — evidence quality uses controlled vocabulary", () => expect(["High", "Moderate", "Low"]).toContain(result.evidenceQuality));
   test("19 — confidence rationale is present", () => expect(String(result.confidenceRationale)).not.toHaveLength(0));
   test("20 — model provenance is exposed for auditability", () => expect(String(result.aiModel)).not.toHaveLength(0));
+
+  test("21 — lab findings are connected to protocol impact when supported", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).toMatch(/hemoglobin|anc|platelet|creatinine|alt|ast/);
+    expect(text).toMatch(/protocol|eligib/);
+  });
+  test("22 — medication reasoning does not invent a prohibited-medication conclusion", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).toMatch(/prednisone|medication/);
+    expect(text).not.toMatch(/prednisone (is|was) (definitely|confirmed) prohibited/);
+  });
+  test("23 — protocol deviation reasoning addresses operational or data-integrity impact", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).toMatch(/deviation|day 21|visit window/);
+    expect(text).toMatch(/impact|safety|data|assessment|review/);
+  });
+  test("24 — medical coding reasoning does not fabricate final dictionary codes", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).toMatch(/coding|meddra/);
+    expect(text).not.toMatch(/final (meddra|dictionary) (code|id|identifier) is \d+/);
+  });
+  test("25 — overall decision coherence reflects unresolved evidence", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).toMatch(/review required|not decision-ready|pending|unresolved|cannot (confirm|finalize)/);
+    expect(result.dataGaps.length).toBeGreaterThan(0);
+  });
 });
