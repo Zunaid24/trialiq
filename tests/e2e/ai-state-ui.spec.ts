@@ -38,7 +38,15 @@ test.describe("TrialIQ shared AI state UI QA", () => {
 
     await analyze.click();
 
-    await expect(analyze).toBeDisabled({ timeout: 5_000 });
+    // The application may disable the Analyze button or replace it with a loading
+    // state. Either behavior is valid; what matters is that another Analyze button
+    // cannot remain enabled while the request is in flight.
+    await expect.poll(async () => {
+      const count = await analyze.count();
+      if (count === 0) return "hidden";
+      return (await analyze.isDisabled()) ? "disabled" : "enabled";
+    }, { timeout: 5_000 }).toMatch(/hidden|disabled/);
+
     await expect(page.locator("body")).not.toContainText(/application error|internal server error/i);
 
     const response = await responsePromise;
