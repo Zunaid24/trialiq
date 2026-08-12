@@ -30,24 +30,72 @@ VALUE RULES:
 Return ONLY valid JSON. No markdown fences, comments, trailing commas, or explanatory text.
 `;
 
-function parseJson(text: string) {
-  let cleaned = text.replace(/```json/gi, "").replace(/```/g, "").replace(/\u0000/g, "").trim();
+/**
+ * Extract the outer JSON object without attempting to reinterpret clinical text.
+ * We deliberately track strings so a `}` inside quoted evidence cannot truncate the payload.
+ */
+function extractJsonObject(text: string) {
+  const cleaned = text.replace(/^\uFEFF/, "").replace(/```json/gi, "").replace(/```/g, "").replace(/\u0000/g, "").trim();
   const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("Clinical intelligence returned invalid JSON.");
-  cleaned = cleaned.slice(start, end + 1);
+  if (start < 0) throw new Error("Clinical intelligence returned no JSON object.");
 
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < cleaned.length; i += 1) {
+    const char = cleaned[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') { inString = true; continue; }
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return cleaned.slice(start, i + 1);
+    }
+  }
+  throw new Error("Clinical intelligence returned an incomplete JSON object.");
+}
+
+/**
+ * Apply conservative syntax-only repairs. This does not invent values or alter
+ * clinical wording; it only repairs common JSON formatting mistakes from LLMs.
+ */
+function repairJsonSyntax(input: string) {
+  let output = input;
+
+  // Remove JavaScript-style comments only when they occur outside quoted strings.
+  output = output.replace(/(^|\n)\s*\/\/.*(?=\n|$)/g, "$1");
+  output = output.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  // Remove trailing commas before object/array delimiters.
+  output = output.replace(/,\s*([}\]])/g, "$1");
+
+  // Gemini can occasionally emit an unquoted object key. Quote only identifiers
+  // immediately following an object start/comma and immediately preceding `:`.
+  output = output.replace(/([\{,]\s*)([A-Za-z_$][A-Za-z0-9_$-]*)\s*:/g, '$1"$2":');
+
+  // Normalize accidental single-quoted keys only; do not rewrite single quotes
+  // inside arbitrary clinical strings.
+  output = output.replace(/([\{,]\s*)'([A-Za-z_$][A-Za-z0-9_$-]*)'\s*:/g, '$1"$2":');
+
+  return output;
+}
+
+function parseJson(text: string) {
+  const extracted = extractJsonObject(text);
   try {
-    return JSON.parse(cleaned);
+    return JSON.parse(extracted);
   } catch (firstError) {
-    // Gemini occasionally emits a trailing comma despite responseMimeType=json.
-    // Repair only commas immediately before a closing object/array delimiter; never rewrite clinical content.
-    const repaired = cleaned.replace(/,\s*([}\]])/g, "$1");
+    const repaired = repairJsonSyntax(extracted);
     try {
       return JSON.parse(repaired);
-    } catch {
-      const position = firstError instanceof SyntaxError ? firstError.message : "unknown JSON parse error";
-      throw new Error(`Clinical intelligence returned malformed JSON: ${position}`);
+    } catch (secondError) {
+      const position = secondError instanceof SyntaxError ? secondError.message : firstError instanceof SyntaxError ? firstError.message : "unknown JSON parse error";
+      throw new Error(`Clinical intelligence returned malformed JSON after syntax repair: ${position}`);
     }
   }
 }
