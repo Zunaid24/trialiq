@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { analyzeLabIntelligence } from "@/lib/gemini";
+import { addClinicalAuditMetadata } from "@/lib/clinicalAudit";
 
 export async function POST(req: Request) {
   try {
@@ -15,18 +16,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const result =
-      await analyzeLabIntelligence(document);
-
-    return NextResponse.json({
-      success: true,
-      result,
-    });
-  } catch (error: any) {
-    console.error(
-      "Lab Intelligence API Error:",
-      error
+    const result = addClinicalAuditMetadata(
+      await analyzeLabIntelligence(document),
+      "Laboratory Intelligence"
     );
+
+    return NextResponse.json({ success: true, result });
+  } catch (error: any) {
+    console.error("Lab Intelligence API Error:", error);
 
     return NextResponse.json(
       {
@@ -36,9 +33,7 @@ export async function POST(req: Request) {
             ? "Gemini is busy. Please try again."
             : "Lab intelligence analysis failed.",
       },
-      {
-        status: error?.status || 500,
-      }
+      { status: error?.status || 500 }
     );
   }
 }
