@@ -52,8 +52,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!ready) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><div className="text-sm font-medium text-slate-500">Loading your TrialIQ workspace…</div></div>;
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside className="w-72 border-r border-border bg-card">
+    <div className="min-h-screen bg-background">
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-card">
         <div className="border-b border-border px-6 py-6">
           <Link href="/" className="flex w-fit items-center gap-2.5 font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80" aria-label="TrialIQ AI home">
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-700 font-mono text-[11px] font-medium text-white">iq</span>
@@ -62,19 +62,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
           <p className="mt-2 pl-10 text-xs text-muted-foreground">Clinical AI Platform</p>
         </div>
-        <nav className="space-y-1 p-4">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
           {menu.map((item) => {
             const Icon = item.icon;
             const isActive = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
             return <Link key={item.title} href={item.href} className={`flex items-center gap-3.5 rounded-lg px-4 py-2.5 text-sm font-medium transition ${isActive ? "bg-blue-50 text-blue-700" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={18} />{item.title}</Link>;
           })}
         </nav>
-        <div className="absolute bottom-0 w-72 border-t border-border p-4">
+        <div className="border-t border-border p-4">
           <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-red-50 hover:text-red-700"><LogOut size={18} />Sign out</button>
         </div>
       </aside>
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-card px-8 py-4">
+      <div className="ml-72 flex min-h-screen flex-col">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card px-8 py-4">
           <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm"><Search size={16} className="text-muted-foreground" /><input placeholder="Search participants, protocols, sites…" className="w-64 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" /></div>
           <div className="flex items-center gap-4">
             <button className="rounded-lg border border-border p-2.5 text-muted-foreground transition hover:text-foreground" aria-label="Notifications"><Bell size={17} /></button>
