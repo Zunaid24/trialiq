@@ -57,6 +57,22 @@ test.describe("TrialIQ live clinical AI QA — Eligibility", () => {
     expect(Array.isArray(result.recommendations)).toBeTruthy();
     expect(typeof result.confidence).toBe("number");
     expect(typeof result.evidenceQuality).toBe("string");
+    expect(typeof result.audit?.modelUsed).toBe("string");
+    expect(result.audit.modelUsed).not.toBe("Not exposed by analysis engine");
+
+    // Evidence-fidelity regression: undocumented/pending source facts can
+    // never be promoted to a positive eligibility finding.
+    const criteria = [
+      ...result.criteriaEvaluation.inclusion,
+      ...result.criteriaEvaluation.exclusion,
+    ];
+    for (const criterion of criteria) {
+      const text = `${criterion.actual ?? ""} ${criterion.evidence ?? ""}`;
+      if (/not documented|unknown|insufficient evidence|not provided|not available|pending|cannot be determined/i.test(text)) {
+        expect(criterion.status).not.toBe("Met");
+        expect(criterion.reviewRequired).toBeTruthy();
+      }
+    }
 
     await expect(page.getByText(/AI-assisted eligibility review/i)).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(/Eligibility criteria review/i)).toBeVisible();
