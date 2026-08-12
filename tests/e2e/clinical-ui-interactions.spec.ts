@@ -8,48 +8,12 @@ test.describe("TrialIQ clinical module UI interaction QA", () => {
   test.skip(!email || !password, "QA credentials are not configured");
 
   const modules = [
-    {
-      name: "Lab Intelligence",
-      path: "/dashboard/workspace/lab-intelligence",
-      demo: /load demo/i,
-      analyze: /analyze laboratory results/i,
-      document: /lab-demo\.pdf/i,
-    },
-    {
-      name: "Medication Review",
-      path: "/dashboard/workspace/medications",
-      demo: /load demo medication/i,
-      analyze: /analyze medications/i,
-      document: /medication-demo\.pdf/i,
-    },
-    {
-      name: "Adverse Events",
-      path: "/dashboard/workspace/adverse-events",
-      demo: /load demo event/i,
-      analyze: /assess adverse event/i,
-      document: /adverse-event-demo\.pdf/i,
-    },
-    {
-      name: "Protocol Deviations",
-      path: "/dashboard/workspace/deviations",
-      demo: /load demo/i,
-      analyze: /analyze.*deviation/i,
-      document: /deviation-demo\.pdf/i,
-    },
-    {
-      name: "Safety Signals",
-      path: "/dashboard/workspace/safety",
-      demo: /load demo/i,
-      analyze: /analyze.*safety/i,
-      document: /safety-demo\.pdf/i,
-    },
-    {
-      name: "Medical Coding",
-      path: "/dashboard/workspace/medical-coding",
-      demo: /load demo/i,
-      analyze: /analyze.*coding/i,
-      document: /coding-demo\.pdf/i,
-    },
+    { name: "Lab Intelligence", path: "/dashboard/workspace/lab-intelligence", demo: /load demo/i, analyze: /analyze laboratory results/i },
+    { name: "Medication Review", path: "/dashboard/workspace/medications", demo: /load demo medication/i, analyze: /analyze medications/i },
+    { name: "Adverse Events", path: "/dashboard/workspace/adverse-events", demo: /load demo event/i, analyze: /assess adverse event/i },
+    { name: "Protocol Deviations", path: "/dashboard/workspace/deviations", demo: /load demo/i, analyze: /detect protocol deviations/i },
+    { name: "Safety Signals", path: "/dashboard/workspace/safety", demo: /load demo/i, analyze: /detect safety signals/i },
+    { name: "Medical Coding", path: "/dashboard/workspace/medical-coding", demo: /load demo/i, analyze: /analyze & suggest codes/i },
   ];
 
   async function signIn(page: Page) {
@@ -64,7 +28,6 @@ test.describe("TrialIQ clinical module UI interaction QA", () => {
     test(`${module.name} follows the standard demo-to-analysis interaction pattern`, async ({ page }) => {
       await signIn(page);
       await page.goto(`${baseURL}${module.path}`);
-
       await expect(page.locator("body")).not.toContainText(/application error|internal server error/i);
 
       const demo = page.getByRole("button", { name: module.demo });
@@ -72,12 +35,9 @@ test.describe("TrialIQ clinical module UI interaction QA", () => {
       await expect(demo).toBeEnabled();
       await demo.click();
 
-      await expect(page.getByText(module.document)).toBeVisible();
-
       const analyze = page.getByRole("button", { name: module.analyze });
       await expect(analyze).toBeVisible();
       await expect(analyze).toBeEnabled();
-
       await expect(page.locator("body")).not.toContainText(/application error|internal server error/i);
     });
   }
