@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 const menu = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -22,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const supabase = createClient();
     let mounted = true;
     supabase.auth.getUser().then(async ({ data }) => {
       if (!mounted) return;
@@ -45,6 +46,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname, router]);
 
   async function signOut() {
+    const supabase = createClient();
     await supabase.auth.signOut();
     router.replace("/auth");
   }
