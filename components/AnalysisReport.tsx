@@ -6,6 +6,7 @@ export default function AnalysisReport({ report }: Props) {
   if (!report) return null;
 
   const reviewItems = report.pendingAssessments ?? [];
+  const evidenceQuality = report.evidenceQuality ?? "Not assessed";
 
   return (
     <div className="mt-12 space-y-8">
@@ -20,50 +21,43 @@ export default function AnalysisReport({ report }: Props) {
                 {report.studyTitle ?? "Clinical Trial"}
               </h2>
             </div>
-
-            <span
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                report.eligible
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-700"
-              }`}
-            >
+            <span className={`rounded-full px-4 py-2 text-sm font-semibold ${report.eligible ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
               {report.screeningResult ?? "Screening Complete"}
             </span>
           </div>
-
           <p className="mt-4 max-w-4xl leading-7 text-slate-600">
-            {report.executiveSummary ??
-              report.reasonForIneligibility ??
-              "Clinical trial screening analysis completed."}
+            {report.executiveSummary ?? report.reasonForIneligibility ?? "Clinical trial screening analysis completed."}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-px bg-slate-100 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px bg-slate-100 md:grid-cols-5">
           <Metric label="Participant" value={report.participantId ?? "--"} />
           <Metric label="Eligibility" value={report.screeningResult ?? "--"} />
           <Metric label="Eligibility score" value={report.eligibilityScore != null ? `${report.eligibilityScore}%` : "--"} />
+          <Metric label="Evidence quality" value={evidenceQuality} />
           <Metric label="AI confidence" value={report.confidence != null ? `${report.confidence}%` : "--"} />
         </div>
       </div>
 
+      {(report.confidenceRationale || report.limitations?.length) && (
+        <Section title="Evidence quality">
+          {report.confidenceRationale && <p className="leading-7 text-slate-700">{report.confidenceRationale}</p>}
+          {report.limitations?.length ? (
+            <div className="mt-4 space-y-2">
+              {report.limitations.map((item: string, index: number) => <p key={index} className="text-sm text-slate-600">• {item}</p>)}
+            </div>
+          ) : null}
+        </Section>
+      )}
+
       <Section title="Review first">
         <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="font-semibold text-blue-950">
-                {reviewItems.length
-                  ? `${reviewItems.length} item${reviewItems.length === 1 ? "" : "s"} require human review`
-                  : "No pending assessments returned"}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-blue-800">
-                TrialIQ surfaces evidence and potential issues; the clinical team remains responsible for the final decision.
-              </p>
-            </div>
-            <span className="w-fit rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm">
-              Human review required
-            </span>
-          </div>
+          <p className="font-semibold text-blue-950">
+            {reviewItems.length ? `${reviewItems.length} item${reviewItems.length === 1 ? "" : "s"} require human review` : "No pending assessments returned"}
+          </p>
+          <p className="mt-1 text-sm leading-6 text-blue-800">
+            TrialIQ surfaces evidence and potential issues; the clinical team remains responsible for the final decision.
+          </p>
         </div>
       </Section>
 
@@ -93,23 +87,18 @@ export default function AnalysisReport({ report }: Props) {
 
       <Section title="Clinical review actions">
         <div className="space-y-4">
-          {reviewItems.length ? (
-            reviewItems.map((item: any, index: number) => (
-              <div key={index} className="rounded-xl border border-amber-200 bg-amber-50 p-5">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <h3 className="font-semibold text-slate-900">{item.assessment}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{item.clinicalImpact}</p>
-                  </div>
-                  <span className="w-fit rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
-                    {item.status}
-                  </span>
+          {reviewItems.length ? reviewItems.map((item: any, index: number) => (
+            <div key={index} className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h3 className="font-semibold text-slate-900">{item.assessment}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.clinicalImpact}</p>
+                  {item.evidence && <Evidence evidence={item.evidence} source={item.sourceReference} />}
                 </div>
+                <span className="w-fit rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">{item.status}</span>
               </div>
-            ))
-          ) : (
-            <p className="text-slate-500">No pending assessments available.</p>
-          )}
+            </div>
+          )) : <p className="text-slate-500">No pending assessments available.</p>}
         </div>
       </Section>
 
@@ -117,74 +106,51 @@ export default function AnalysisReport({ report }: Props) {
         {report.recommendations?.length ? (
           <div className="space-y-3">
             {report.recommendations.map((recommendation: string, index: number) => (
-              <div key={index} className="rounded-xl border bg-slate-50 p-4">
-                <div className="flex gap-3">
-                  <span className="font-semibold text-blue-700">{index + 1}.</span>
-                  <p className="leading-6 text-slate-700">{recommendation}</p>
-                </div>
+              <div key={index} className="rounded-xl border bg-slate-50 p-4 flex gap-3">
+                <span className="font-semibold text-blue-700">{index + 1}.</span>
+                <p className="leading-6 text-slate-700">{recommendation}</p>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-slate-500">No recommendations available.</p>
-        )}
+        ) : <p className="text-slate-500">No recommendations available.</p>}
       </Section>
     </div>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="bg-white p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-2 text-xl font-bold text-slate-900">{value}</p>
-    </div>
-  );
+  return <div className="bg-white p-5"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p><p className="mt-2 text-xl font-bold text-slate-900">{value}</p></div>;
 }
 
 function CriteriaGroup({ title, items }: { title: string; items?: any[] }) {
-  return (
-    <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
-      <div className="space-y-3">
-        {items?.length ? items.map((item: any, index: number) => <Criterion key={index} item={item} />) : <p className="text-sm text-slate-500">No criteria available.</p>}
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <h2 className="mb-5 text-2xl font-bold text-slate-950">{title}</h2>
-      {children}
-    </section>
-  );
+  return <div><h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h3><div className="space-y-3">{items?.length ? items.map((item: any, index: number) => <Criterion key={index} item={item} />) : <p className="text-sm text-slate-500">No criteria available.</p>}</div></div>;
 }
 
 function Criterion({ item }: { item: any }) {
   const status = item.status ?? "Unknown";
   const normalized = status.toLowerCase();
-  const badge = normalized.includes("pending")
-    ? "bg-amber-100 text-amber-700"
-    : normalized.includes("not met") || normalized === "not"
-      ? "bg-red-100 text-red-700"
-      : normalized.includes("met")
-        ? "bg-green-100 text-green-700"
-        : "bg-slate-100 text-slate-700";
-
+  const badge = normalized.includes("pending") || normalized.includes("review") ? "bg-amber-100 text-amber-700" : normalized.includes("not met") ? "bg-red-100 text-red-700" : normalized.includes("met") ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700";
   return (
     <div className="rounded-xl border border-slate-200 p-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <p className="font-medium text-slate-900">{item.criterion}</p>
           <div className="mt-2 space-y-1 text-sm text-slate-500">
             {item.expected && <p><span className="font-medium text-slate-600">Protocol requires:</span> {item.expected}</p>}
             {item.actual && <p><span className="font-medium text-slate-600">Participant record:</span> {item.actual}</p>}
           </div>
+          {item.evidence && <Evidence evidence={item.evidence} source={item.sourceReference} />}
         </div>
         <span className={`w-fit shrink-0 rounded-full px-3 py-1 text-sm font-medium ${badge}`}>{status}</span>
       </div>
     </div>
   );
+}
+
+function Evidence({ evidence, source }: { evidence: string; source?: string }) {
+  return <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600"><span className="font-semibold text-slate-700">Evidence:</span> {evidence}{source ? <span className="ml-2 text-slate-400">Source: {source}</span> : null}</div>;
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"><h2 className="mb-5 text-2xl font-bold text-slate-950">{title}</h2>{children}</section>;
 }
