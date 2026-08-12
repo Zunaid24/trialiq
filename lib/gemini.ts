@@ -1111,3 +1111,624 @@ ${document}
 
   return JSON.parse(text);
 }
+
+/* ============================================================
+   PROTOCOL DEVIATION DETECTION
+============================================================ */
+
+export async function analyzeProtocolDeviation(
+  protocol: string,
+  participantRecord: string
+) {
+  const prompt = `
+You are an expert Clinical Research Associate
+specializing in clinical trial protocol compliance.
+
+Compare the Clinical Trial Protocol with the
+Participant Record.
+
+Your task is to identify potential protocol deviations
+by comparing what the protocol requires with what the
+participant record documents as having occurred.
+
+IMPORTANT:
+
+- Do not invent information.
+- Do not assume that something happened if it is not
+  documented.
+- Do not classify something as a deviation when the
+  available information is insufficient.
+- Clearly distinguish confirmed deviations from items
+  requiring review.
+- Use the protocol as the source of requirements.
+- Use the participant record as the source of actual
+  documented events.
+- Do not make medical treatment recommendations.
+- Do not make regulatory decisions.
+- Investigator or study-team review may be required.
+
+Return ONLY valid JSON.
+
+{
+  "studyTitle": "",
+  "participantId": "",
+  "deviationCount": 0,
+  "overallRisk": "",
+  "summary": "",
+
+  "deviations": [
+    {
+      "category": "",
+      "description": "",
+      "protocolRequirement": "",
+      "actualEvent": "",
+      "date": "",
+      "severity": "",
+      "impact": "",
+      "evidence": "",
+      "status": ""
+    }
+  ],
+
+  "missingInformation": [
+    ""
+  ],
+
+  "recommendedActions": [
+    ""
+  ],
+
+  "investigatorReviewRequired": false,
+
+  "confidence": 0
+}
+
+DEVIATION CATEGORIES MAY INCLUDE:
+
+- Missed Visit
+- Out-of-Window Visit
+- Missing Assessment
+- Incorrect Procedure
+- Incorrect Timing
+- Incorrect Dose
+- Unscheduled Procedure
+- Eligibility-related Deviation
+- Safety-related Deviation
+- Documentation Deviation
+- Other Protocol Deviation
+
+STATUS VALUES SHOULD REFLECT THE EVIDENCE:
+
+- Confirmed
+- Potential
+- Requires Review
+
+SEVERITY:
+
+Use the terminology supported by the source
+documents. If severity is not explicitly defined,
+use a cautious classification such as:
+
+- Low
+- Moderate
+- High
+- Requires Review
+
+Do not invent a severity classification when the
+available evidence does not support one.
+
+ANALYSIS REQUIREMENTS:
+
+1. Extract relevant protocol requirements.
+
+2. Identify the participant events that correspond
+   to those requirements.
+
+3. Compare required versus documented events.
+
+4. Pay particular attention to:
+   - Visit windows
+   - Visit dates
+   - Required assessments
+   - Laboratory assessments
+   - Procedures
+   - Medication administration
+   - Dose and timing
+   - Safety assessments
+   - Required documentation
+
+5. For every potential deviation provide evidence.
+
+6. If the protocol requires something but the
+   participant record does not provide enough
+   information to determine whether it occurred,
+   put it in missingInformation or mark it
+   Requires Review rather than automatically
+   declaring a deviation.
+
+7. Recommended actions should be operational,
+   such as:
+   - Verify source documentation
+   - Confirm visit date
+   - Obtain missing assessment
+   - Notify investigator
+   - Document deviation
+   - Review impact
+
+Do not provide patient treatment advice.
+
+CLINICAL TRIAL PROTOCOL:
+
+${protocol}
+
+PARTICIPANT RECORD:
+
+${participantRecord}
+`;
+
+  let response;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+      });
+
+      break;
+    } catch (error: any) {
+      if (
+        error?.status === 503 &&
+        attempt < 3
+      ) {
+        console.log(
+          `Gemini busy. Retrying deviation analysis (${attempt}/3)...`
+        );
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, 3000)
+        );
+
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  if (!response) {
+    throw new Error(
+      "Gemini did not return a response."
+    );
+  }
+
+  let text = response.text ?? "";
+
+  text = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  return JSON.parse(text);
+}
+
+/* ============================================================
+   SAFETY SIGNAL DETECTION
+============================================================ */
+
+export async function analyzeSafetySignals(
+  document: string,
+  fileName?: string
+) {
+  const prompt = `
+You are an expert Clinical Research Associate and
+clinical safety specialist.
+
+Analyze the provided clinical trial safety dataset.
+
+The dataset may contain adverse events and safety
+information from multiple participants.
+
+Your task is to identify potential patterns or
+signals that may warrant further clinical review.
+
+IMPORTANT:
+
+- Do NOT establish causality.
+- Do NOT conclude that a treatment or investigational
+  product caused an event.
+- Do NOT diagnose participants.
+- Do NOT recommend treatment.
+- Do NOT invent information.
+- Do NOT invent event frequencies.
+- Only use information contained in the document.
+- Distinguish observed patterns from causal conclusions.
+- A potential signal is a pattern requiring further
+  investigation, not a confirmed safety finding.
+
+Return ONLY valid JSON.
+
+{
+  "studyTitle": "",
+  "participantsReviewed": 0,
+  "eventsReviewed": 0,
+  "signalsDetected": 0,
+  "overallSafetyStatus": "",
+  "summary": "",
+
+  "signals": [
+    {
+      "signal": "",
+      "description": "",
+      "eventType": "",
+      "affectedParticipants": [],
+      "eventCount": 0,
+      "severityPattern": "",
+      "seriousEvents": 0,
+      "evidence": "",
+      "priority": "",
+      "status": ""
+    }
+  ],
+
+  "notablePatterns": [
+    ""
+  ],
+
+  "missingInformation": [
+    ""
+  ],
+
+  "recommendedActions": [
+    ""
+  ],
+
+  "clinicalReviewRequired": false,
+
+  "confidence": 0
+}
+
+SIGNAL IDENTIFICATION:
+
+Look for patterns such as:
+
+- The same adverse event occurring in multiple
+  participants.
+- Increased frequency of a particular event.
+- Multiple serious events of the same type.
+- Repeated events affecting the same organ system.
+- Similar events occurring within a similar time period.
+- Clusters of severity or seriousness.
+- Events that appear unusual within the provided
+  dataset.
+
+Do NOT call something a safety signal simply because
+it is a serious event.
+
+PRIORITY:
+
+Use:
+
+- High
+- Moderate
+- Low
+- Review
+
+STATUS:
+
+Use:
+
+- Potential Signal
+- Pattern Observed
+- Requires Review
+
+EVIDENCE:
+
+Evidence must reference the actual information
+contained in the supplied dataset.
+
+For affectedParticipants, use only participant IDs
+that appear in the source document.
+
+If the dataset does not contain enough information
+to evaluate a pattern, explain this in
+missingInformation.
+
+RECOMMENDED ACTIONS:
+
+Actions should be operational and review-oriented,
+for example:
+
+- Review source records.
+- Review event timelines.
+- Confirm event coding.
+- Review seriousness classification.
+- Review related concomitant medications.
+- Escalate to the appropriate safety team.
+- Perform additional clinical review.
+
+Do not provide patient treatment advice.
+
+DOCUMENT NAME:
+
+${fileName ?? "Unknown"}
+
+SAFETY DATA:
+
+${document}
+`;
+
+  let response;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+      });
+
+      break;
+    } catch (error: any) {
+      if (
+        error?.status === 503 &&
+        attempt < 3
+      ) {
+        console.log(
+          `Gemini busy. Retrying safety analysis (${attempt}/3)...`
+        );
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, 3000)
+        );
+
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  if (!response) {
+    throw new Error(
+      "Gemini did not return a response."
+    );
+  }
+
+  let text = response.text ?? "";
+
+  text = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  return JSON.parse(text);
+}
+
+/* ============================================================
+   MEDICAL CODING INTELLIGENCE
+============================================================ */
+
+export async function analyzeMedicalCoding(
+  document: string,
+  fileName?: string
+) {
+  const prompt = `
+You are an expert Clinical Research Associate and
+clinical terminology specialist with experience in
+clinical trial medical coding.
+
+Analyze the supplied clinical source document.
+
+Extract clinically relevant medical terms and provide
+AI-assisted coding suggestions.
+
+PRIMARY CODING FOCUS:
+
+1. MedDRA
+   - Verbatim Term
+   - Preferred Term
+   - System Organ Class
+
+2. ICD-10
+   - Suggested diagnosis code where appropriate
+
+Do NOT invent a code when the source information is
+insufficient.
+
+IMPORTANT:
+
+- Do not diagnose the participant.
+- Do not invent medical conditions.
+- Do not invent medications.
+- Do not invent codes.
+- Do not claim that an AI suggestion is an approved
+  final medical code.
+- Clearly identify all suggestions as requiring
+  qualified human coder review.
+- Preserve the terminology used in the source document.
+- Use only information present in the document.
+- If a precise code cannot be determined, explain why.
+- Distinguish source terminology from normalized
+  terminology and AI suggestions.
+
+Return ONLY valid JSON.
+
+{
+  "studyTitle": "",
+  "participantId": "",
+  "documentType": "",
+
+  "termsReviewed": 0,
+  "codingSuggestions": 0,
+  "reviewRequired": 0,
+
+  "summary": "",
+
+  "codingItems": [
+    {
+      "verbatimTerm": "",
+      "normalizedTerm": "",
+      "context": "",
+
+      "dictionary": "",
+
+      "meddra": {
+        "preferredTerm": "",
+        "systemOrganClass": ""
+      },
+
+      "icd10": {
+        "code": "",
+        "description": ""
+      },
+
+      "confidence": 0,
+
+      "evidence": "",
+
+      "alternativeSuggestions": [],
+
+      "status": ""
+    }
+  ],
+
+  "uncodedTerms": [
+    {
+      "term": "",
+      "reason": ""
+    }
+  ],
+
+  "recommendedActions": [],
+
+  "humanReviewRequired": true,
+
+  "confidence": 0
+}
+
+STATUS VALUES:
+
+- Suggested
+- Review Required
+- Insufficient Information
+- Not Codeable
+
+DICTIONARY:
+
+Use:
+
+- MedDRA
+- ICD-10
+- MedDRA + ICD-10
+
+Do not claim a specific dictionary version unless
+the source document provides it.
+
+MEDDRA:
+
+For adverse events and medical conditions, provide:
+
+- Preferred Term
+- System Organ Class
+
+Only provide a suggestion when the clinical term
+supports it.
+
+ICD-10:
+
+Provide an ICD-10 code only when the documented
+condition is sufficiently specific.
+
+If the source only says something vague such as
+"pain" or "abnormal result", do not invent a highly
+specific diagnosis.
+
+EVIDENCE:
+
+Every coding suggestion must include the relevant
+source wording or a concise description of the source
+evidence.
+
+ALTERNATIVE SUGGESTIONS:
+
+Include alternatives only when there is genuine
+terminology ambiguity.
+
+CONFIDENCE:
+
+0-100.
+
+Use lower confidence when:
+
+- The source term is ambiguous.
+- The documentation is incomplete.
+- Multiple coding interpretations are possible.
+- The clinical context is insufficient.
+
+RECOMMENDED ACTIONS:
+
+Examples:
+
+- Confirm terminology against source documentation.
+- Review suggested MedDRA Preferred Term.
+- Confirm System Organ Class.
+- Confirm ICD-10 specificity.
+- Obtain clarification from the investigator.
+- Complete qualified medical coder review.
+
+Do not provide treatment recommendations.
+
+DOCUMENT:
+
+${fileName ?? "Unknown"}
+
+CLINICAL SOURCE DOCUMENT:
+
+${document}
+`;
+
+  let response;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+      });
+
+      break;
+    } catch (error: any) {
+      if (
+        error?.status === 503 &&
+        attempt < 3
+      ) {
+        console.log(
+          `Gemini busy. Retrying medical coding analysis (${attempt}/3)...`
+        );
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, 3000)
+        );
+
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  if (!response) {
+    throw new Error(
+      "Gemini did not return a response."
+    );
+  }
+
+  let text = response.text ?? "";
+
+  text = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  return JSON.parse(text);
+}

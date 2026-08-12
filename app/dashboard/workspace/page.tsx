@@ -8,6 +8,9 @@ import {
   ShieldAlert,
   TriangleAlert,
   FlaskConical,
+  Stethoscope,
+  BarChart3,
+  Activity
 } from "lucide-react";
 
 const modules = [
@@ -75,6 +78,22 @@ const modules = [
     icon: FlaskConical,
     status: "LIVE",
   },
+  {
+  title: "Medical Coding Intelligence",
+  description:
+    "Extract clinical terms and generate AI-assisted MedDRA and ICD-10 coding suggestions with evidence and confidence.",
+  href: "/dashboard/workspace/medical-coding",
+  icon: Stethoscope,
+  status: "LIVE",
+},
+{
+  title: "Safety Signal Detection",
+  description:
+    "Surface recurring safety patterns, unusual event clusters and potential signals requiring clinical review.",
+  href: "/dashboard/workspace/safety",
+  icon: Activity,
+  status: "LIVE",
+},
 ];
 
 export default function WorkspacePage() {

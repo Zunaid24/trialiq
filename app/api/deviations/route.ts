@@ -1,0 +1,161 @@
+import { NextResponse } from "next/server";
+import { analyzeProtocolDeviation } from "@/lib/gemini";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+
+    const protocol = body?.protocol;
+    const participantRecord =
+      body?.participantRecord;
+
+    if (
+      !protocol ||
+      typeof protocol !== "string"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Clinical trial protocol is required.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !participantRecord ||
+      typeof participantRecord !== "string"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Participant record is required.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const result =
+      await analyzeProtocolDeviation(
+        protocol,
+        participantRecord
+      );
+
+    const {
+      setProtocolDeviations,
+      addDashboardAction,
+      addDashboardActivity,
+    } = await import("@/lib/dashboardStore");
+
+
+      const deviations = Array.isArray(
+  result?.deviations
+)
+  ? result.deviations
+  : [];
+
+const confirmedDeviations =
+  deviations.filter(
+    (item: any) =>
+      String(item?.status ?? "")
+        .toLowerCase()
+        .includes("confirmed")
+  );
+
+setProtocolDeviations(
+  confirmedDeviations.length
+);
+
+for (const deviation of deviations) {
+  const status = String(
+    deviation?.status ?? ""
+  ).toLowerCase();
+
+  if (
+    status.includes("confirmed") ||
+    status.includes("potential")
+  ) {
+    const priority =
+      String(
+        deviation?.severity ?? ""
+      ).toLowerCase().includes("high")
+        ? "HIGH"
+        : "MEDIUM";
+
+    addDashboardAction({
+      id: `DEV-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`,
+
+      priority,
+
+      type: "Protocol Deviation",
+
+      title:
+        deviation?.description ||
+        "Protocol deviation requires review",
+
+      participant:
+        result?.participantId
+          ? `Participant ${result.participantId}`
+          : "Participant record",
+
+      time: "Just now",
+
+      href:
+        "/dashboard/workspace/deviations",
+    });
+  }
+}
+
+if (deviations.length > 0) {
+  addDashboardActivity({
+    id: `DEV-ACT-${Date.now()}`,
+
+    title:
+      "Protocol deviation analysis completed",
+
+    description: `${deviations.length} potential deviation${
+      deviations.length === 1 ? "" : "s"
+    } identified`,
+
+    time: "Just now",
+
+    type: "deviation",
+  });
+}
+
+    return NextResponse.json({
+      success: true,
+      result,
+    });
+  } catch (error: any) {
+    console.error(
+      "Protocol Deviation API Error:",
+      error
+    );
+
+    if (error?.status === 503) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Gemini is currently experiencing high demand. Please try again.",
+        },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          error?.message ||
+          "Protocol deviation analysis failed.",
+      },
+      { status: 500 }
+    );
+  }
+}
