@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeMedicalCoding } from "@/lib/gemini";
 import { addClinicalAuditMetadata } from "@/lib/clinicalAudit";
+import { hardenClinicalOutput } from "@/lib/clinicalOutputGuardrails";
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +14,11 @@ export async function POST(req: Request) {
     }
 
     const result = addClinicalAuditMetadata(
-      await analyzeMedicalCoding(document, fileName),
+      hardenClinicalOutput(
+        "Medical Coding Intelligence",
+        await analyzeMedicalCoding(document, fileName),
+        document
+      ),
       "Medical Coding Intelligence"
     );
 
