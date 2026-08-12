@@ -26,9 +26,16 @@ test.describe("TrialIQ live clinical AI QA — Lab Intelligence", () => {
 
     await page.getByRole("button", { name: "Analyze Laboratory Results" }).click();
     const response = await responsePromise;
-
-    expect(response.ok()).toBeTruthy();
     const result = await response.json();
+
+    console.log("LAB INTELLIGENCE API STATUS:", response.status());
+    console.log("LAB INTELLIGENCE API RESPONSE:", JSON.stringify(result, null, 2));
+
+    expect(
+      response.ok(),
+      `Lab Intelligence API returned HTTP ${response.status()}: ${JSON.stringify(result)}`
+    ).toBeTruthy();
+
     const serialized = JSON.stringify(result);
 
     expect(serialized.length).toBeGreaterThan(100);
