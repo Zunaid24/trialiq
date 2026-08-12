@@ -236,7 +236,7 @@ export default function DashboardPage() {
 
         <div className="mb-10">
 
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-violet-600">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-blue-600">
 
             <Activity size={16} />
 
@@ -308,7 +308,7 @@ export default function DashboardPage() {
 
                   <div className="flex items-start justify-between">
 
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
 
                       <Icon size={21} />
 
@@ -316,7 +316,7 @@ export default function DashboardPage() {
 
                     <ArrowRight
                       size={17}
-                      className="text-slate-300 transition group-hover:text-violet-600"
+                      className="text-slate-300 transition group-hover:text-blue-600"
                     />
 
                   </div>
@@ -404,7 +404,7 @@ export default function DashboardPage() {
 
                 <div className="min-w-0 flex-1">
 
-                  <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
                     {action.type}
                   </p>
 
@@ -425,7 +425,7 @@ export default function DashboardPage() {
                     {action.time}
                   </span>
 
-                  <span className="text-sm font-semibold text-violet-600">
+                  <span className="text-sm font-semibold text-blue-600">
                     Review →
                   </span>
 
@@ -613,7 +613,7 @@ function HealthRow({
       <div className="h-2 overflow-hidden rounded-full bg-slate-100">
 
         <div
-          className="h-full rounded-full bg-violet-600"
+          className="h-full rounded-full bg-blue-600"
           style={{
             width: `${progress}%`,
           }}
