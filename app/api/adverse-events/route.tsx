@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeAdverseEvent } from "@/lib/gemini";
 import { addClinicalAuditMetadata } from "@/lib/clinicalAudit";
+import { hardenClinicalOutput } from "@/lib/clinicalOutputGuardrails";
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +15,11 @@ export async function POST(req: Request) {
     }
 
     const result = addClinicalAuditMetadata(
-      await analyzeAdverseEvent(document, fileName),
+      hardenClinicalOutput(
+        "Adverse Event Assessment",
+        await analyzeAdverseEvent(document, fileName),
+        document
+      ),
       "Adverse Event Assessment"
     );
 
