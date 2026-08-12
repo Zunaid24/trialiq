@@ -28,7 +28,7 @@ export default function CTA() {
           <div className="flex flex-wrap gap-3">
 
             <Link
-              href="/dashboard/workspace"
+              href="/dashboard"
               className="group inline-flex items-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-500 hover:shadow-lg"
             >
               Launch Workspace
