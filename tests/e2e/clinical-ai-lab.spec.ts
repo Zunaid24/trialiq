@@ -31,22 +31,21 @@ test.describe("TrialIQ live clinical AI QA — Lab Intelligence", () => {
     console.log("LAB INTELLIGENCE API STATUS:", response.status());
     console.log("LAB INTELLIGENCE API RESPONSE:", JSON.stringify(result, null, 2));
 
-    expect(
-      response.ok(),
-      `Lab Intelligence API returned HTTP ${response.status()}: ${JSON.stringify(result)}`
-    ).toBeTruthy();
+    expect(response.ok(), `Lab Intelligence API returned HTTP ${response.status()}: ${JSON.stringify(result)}`).toBeTruthy();
 
     const serialized = JSON.stringify(result);
-
     expect(serialized.length).toBeGreaterThan(100);
     expect(serialized).toMatch(/lab|laboratory|result|finding|abnormal|clinical|evidence/i);
+    // Guardrail regression: PDF extraction must not expose the broken "×10 n /L" unit.
+    expect(serialized).toContain("×10⁹/L");
+    expect(serialized).not.toContain("×10 n /L");
 
     await expect(page.locator("body")).not.toContainText(/application error|internal server error/i);
     await page.screenshot({ path: "test-results/lab-intelligence-ai-report.png", fullPage: true });
 
     test.info().annotations.push({
       type: "clinical-ai",
-      description: "Live Lab Intelligence analysis response was returned successfully and contained clinical result/evidence content.",
+      description: "Live Lab Intelligence analysis returned clinical result/evidence content and passed unit normalization guardrails.",
     });
   });
 });
