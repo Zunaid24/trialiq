@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -23,6 +23,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
     setError("");
     setMessage("");
+    const supabase = createClient();
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) setError(updateError.message);
     else {
