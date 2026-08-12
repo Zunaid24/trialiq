@@ -42,8 +42,6 @@ test.describe("TrialIQ live clinical AI QA — remaining modules", () => {
       await page.getByRole("button", { name: /sign in/i }).click();
       await expect(page).toHaveURL(/\/dashboard/);
 
-      // Use the route directly so this test validates the module workflow,
-      // not the sidebar's presentation label.
       await page.goto(`${baseURL}${item.path}`);
       await page.getByRole("button", { name: item.demo }).click();
 
@@ -55,9 +53,16 @@ test.describe("TrialIQ live clinical AI QA — remaining modules", () => {
       await page.getByRole("button", { name: item.analyze }).click();
 
       const response = await responsePromise;
-      expect(response.ok()).toBeTruthy();
-
       const body = await response.json();
+
+      console.log(`${item.name} API STATUS:`, response.status());
+      console.log(`${item.name} API RESPONSE:`, JSON.stringify(body, null, 2));
+
+      expect(
+        response.ok(),
+        `${item.name} API returned HTTP ${response.status()}: ${JSON.stringify(body)}`
+      ).toBeTruthy();
+
       const serialized = JSON.stringify(body);
 
       expect(serialized.length).toBeGreaterThan(100);
