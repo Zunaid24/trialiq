@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight, Check, CheckCheck } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight, Check, CheckCheck, ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const menu = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Review Queue", href: "/dashboard/review-queue", icon: ListChecks },
   { title: "Clinical Workspace", href: "/dashboard/workspace", icon: ClipboardCheck },
   { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { title: "Reports", href: "/dashboard/reports", icon: FileText },
@@ -63,11 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const loadNotifications = async () => {
     setNotificationsLoading(true);
     const supabase = createClient();
-    const { data } = await supabase
-      .from("notifications")
-      .select("id,type,title,message,href,read_at,created_at")
-      .order("created_at", { ascending: false })
-      .limit(12);
+    const { data } = await supabase.from("notifications").select("id,type,title,message,href,read_at,created_at").order("created_at", { ascending: false }).limit(12);
     setNotifications((data ?? []) as Notification[]);
     setNotificationsLoading(false);
   };
@@ -177,11 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen overflow-hidden bg-background">
       <aside className="fixed inset-y-0 left-0 z-40 flex h-screen w-72 shrink-0 flex-col border-r border-border bg-card">
         <div className="shrink-0 border-b border-border px-6 py-6">
-          <Link href="/" className="flex w-fit items-center gap-2.5 font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80" aria-label="TrialIQ AI home">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-700 font-mono text-[11px] font-medium text-white">iq</span>
-            <span className="text-base font-semibold">TrialIQ AI</span>
-            <span className="ml-0.5 rounded border border-slate-300 px-1.5 py-0.5 font-mono text-[9px] font-medium text-slate-500">MVP</span>
-          </Link>
+          <Link href="/" className="flex w-fit items-center gap-2.5 font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80" aria-label="TrialIQ AI home"><span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-700 font-mono text-[11px] font-medium text-white">iq</span><span className="text-base font-semibold">TrialIQ AI</span><span className="ml-0.5 rounded border border-slate-300 px-1.5 py-0.5 font-mono text-[9px] font-medium text-slate-500">MVP</span></Link>
           <p className="mt-2 pl-10 text-xs text-muted-foreground">Clinical AI Platform</p>
         </div>
 
@@ -193,46 +186,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        <div className="shrink-0 border-t border-border bg-card p-4">
-          <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-red-50 hover:text-red-700"><LogOut size={18} />Sign out</button>
-        </div>
+        <div className="shrink-0 border-t border-border bg-card p-4"><button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-red-50 hover:text-red-700"><LogOut size={18} />Sign out</button></div>
       </aside>
 
       <div className="ml-72 flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b border-border bg-card px-8 py-4">
           <div ref={searchRef} className="relative w-full max-w-xl">
-            <div className={`flex w-full items-center gap-3 rounded-lg border bg-secondary px-4 py-3 text-sm transition ${searchOpen ? "border-blue-300 ring-2 ring-blue-50" : "border-border focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-50"}`}>
-              <Search size={17} className="shrink-0 text-muted-foreground" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => query.trim() && setSearchOpen(true)} onKeyDown={(event) => { if (event.key === "Escape") clearSearch(); if (event.key === "Enter" && results[0]) router.push(results[0].href); }} aria-label="Search TrialIQ" placeholder="Search participants, protocols, documents, findings…" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />
-              {searching && <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700" aria-label="Searching" />}
-              {!searching && query && <button onClick={clearSearch} className="rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Clear search"><X size={15} /></button>}
-            </div>
+            <div className={`flex w-full items-center gap-3 rounded-lg border bg-secondary px-4 py-3 text-sm transition ${searchOpen ? "border-blue-300 ring-2 ring-blue-50" : "border-border focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-50"}`}><Search size={17} className="shrink-0 text-muted-foreground" /><input value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => query.trim() && setSearchOpen(true)} onKeyDown={(event) => { if (event.key === "Escape") clearSearch(); if (event.key === "Enter" && results[0]) router.push(results[0].href); }} aria-label="Search TrialIQ" placeholder="Search participants, protocols, documents, findings…" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />{searching && <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700" aria-label="Searching" />}{!searching && query && <button onClick={clearSearch} className="rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Clear search"><X size={15} /></button>}</div>
             {searchOpen && query.trim() && <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"><div className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Search results</div>{results.length > 0 ? results.map((result) => <Link key={`${result.type}-${result.title}-${result.href}`} href={result.href} onClick={() => setSearchOpen(false)} className="flex items-center justify-between gap-4 px-4 py-3 transition hover:bg-slate-50"><div className="min-w-0"><p className="truncate text-sm font-medium text-slate-900">{result.title}</p><p className="mt-0.5 truncate text-xs text-slate-500">{result.type}{result.detail ? ` · ${result.detail}` : ""}</p></div><ArrowRight size={15} className="shrink-0 text-slate-300" /></Link>) : !searching ? <div className="px-4 py-6 text-center"><p className="text-sm font-medium text-slate-700">No matches found</p><p className="mt-1 text-xs text-slate-500">Try a participant ID, study name, document or finding.</p></div> : null}<div className="border-t border-slate-100 bg-slate-50 px-4 py-2 text-[11px] text-slate-400">Searches your TrialIQ workspace and workflows</div></div>}
           </div>
 
           <div className="ml-8 flex shrink-0 items-center gap-4">
-            <div ref={notificationRef} className="relative">
-              <button onClick={() => { setNotificationOpen((open) => !open); if (!notificationOpen) loadNotifications(); }} className={`relative rounded-lg border p-2.5 transition ${notificationOpen ? "border-blue-300 bg-blue-50 text-blue-700" : "border-border text-muted-foreground hover:text-foreground"}`} aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`} aria-expanded={notificationOpen}>
-                <Bell size={17} />
-                {unreadCount > 0 && <span className="absolute -right-1.5 -top-1.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 font-mono text-[9px] font-bold text-white ring-2 ring-card">{unreadCount > 9 ? "9+" : unreadCount}</span>}
-              </button>
-
-              {notificationOpen && <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
-                  <div><h3 className="text-sm font-semibold text-slate-950">Notifications</h3><p className="mt-0.5 text-xs text-slate-500">{unreadCount ? `${unreadCount} require${unreadCount === 1 ? "s" : ""} your attention` : "You're all caught up"}</p></div>
-                  {unreadCount > 0 && <button onClick={markAllNotificationsRead} className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800"><CheckCheck size={14} />Mark all read</button>}
-                </div>
-                <div className="max-h-[420px] overflow-y-auto">
-                  {notificationsLoading ? <div className="px-4 py-10 text-center text-sm text-slate-500">Loading notifications…</div> : notifications.length === 0 ? <div className="px-6 py-10 text-center"><div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400"><Bell size={17} /></div><p className="mt-3 text-sm font-medium text-slate-800">No notifications yet</p><p className="mt-1 text-xs leading-5 text-slate-500">New clinical findings and review items will appear here.</p></div> : notifications.map((notification) => <button key={notification.id} onClick={() => markNotificationRead(notification.id, notification.href)} className={`flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3.5 text-left transition hover:bg-slate-50 ${!notification.read_at ? "bg-blue-50/40" : "bg-white"}`}><div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${!notification.read_at ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>{!notification.read_at ? <Bell size={15} /> : <Check size={15} />}</div><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><p className={`text-sm ${!notification.read_at ? "font-semibold text-slate-950" : "font-medium text-slate-700"}`}>{notification.title}</p><span className="shrink-0 text-[10px] text-slate-400">{formatNotificationTime(notification.created_at)}</span></div>{notification.message && <p className="mt-1 text-xs leading-5 text-slate-500">{notification.message}</p>}</div>{!notification.read_at && <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-700" />}</button>)}
-                </div>
-                <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-[11px] text-slate-400">Notifications are private to your TrialIQ account.</div>
-              </div>}
+            <div ref={notificationRef} className="relative"><button onClick={() => { setNotificationOpen((open) => !open); if (!notificationOpen) loadNotifications(); }} className={`relative rounded-lg border p-2.5 transition ${notificationOpen ? "border-blue-300 bg-blue-50 text-blue-700" : "border-border text-muted-foreground hover:text-foreground"}`} aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`} aria-expanded={notificationOpen}><Bell size={17} />{unreadCount > 0 && <span className="absolute -right-1.5 -top-1.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 font-mono text-[9px] font-bold text-white ring-2 ring-card">{unreadCount > 9 ? "9+" : unreadCount}</span>}</button>
+              {notificationOpen && <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"><div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5"><div><h3 className="text-sm font-semibold text-slate-950">Notifications</h3><p className="mt-0.5 text-xs text-slate-500">{unreadCount ? `${unreadCount} require${unreadCount === 1 ? "s" : ""} your attention` : "You're all caught up"}</p></div>{unreadCount > 0 && <button onClick={markAllNotificationsRead} className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800"><CheckCheck size={14} />Mark all read</button>}</div><div className="max-h-[420px] overflow-y-auto">{notificationsLoading ? <div className="px-4 py-10 text-center text-sm text-slate-500">Loading notifications…</div> : notifications.length === 0 ? <div className="px-4 py-10 text-center"><Bell size={24} className="mx-auto text-slate-300" /><p className="mt-3 text-sm font-medium text-slate-700">No notifications</p></div> : notifications.map((item) => <button key={item.id} onClick={() => markNotificationRead(item.id, item.href)} className={`flex w-full gap-3 border-b border-slate-100 px-4 py-3.5 text-left transition hover:bg-slate-50 ${!item.read_at ? "bg-blue-50/40" : "bg-white"}`}><span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${item.read_at ? "bg-slate-200" : "bg-blue-600"}`} /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-900">{item.title}</p>{item.message && <p className="mt-1 text-xs leading-5 text-slate-500">{item.message}</p>}<p className="mt-1.5 text-[11px] text-slate-400">{formatNotificationTime(item.created_at)}</p></div>{!item.read_at && <span className="mt-1 text-[10px] font-semibold text-blue-700">NEW</span>}</button>)}</div></div>}
             </div>
-            <div className="flex items-center gap-3 border-l border-border pl-4"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 font-mono text-sm font-medium text-white">{(name || email || "T").charAt(0).toUpperCase()}</div><div><p className="text-sm font-semibold text-foreground">{name}</p><p className="max-w-48 truncate text-xs text-muted-foreground">{email}</p></div></div>
+            <div className="hidden h-7 w-px bg-border sm:block" />
+            <div className="text-right"><p className="text-sm font-semibold text-foreground">{name}</p><p className="mt-0.5 text-xs text-muted-foreground">{email}</p></div>
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto p-8">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
