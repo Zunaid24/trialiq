@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight, CheckCheck, ListChecks } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight, CheckCheck, ListChecks, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const menu = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Clinical Intelligence", href: "/dashboard/clinical-intelligence", icon: Sparkles },
   { title: "Review Queue", href: "/dashboard/review-queue", icon: ListChecks },
   { title: "Clinical Workspace", href: "/dashboard/workspace", icon: ClipboardCheck },
   { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
@@ -16,6 +17,7 @@ const menu = [
 ];
 
 const moduleResults = [
+  { title: "Clinical Intelligence", type: "Decision Layer", href: "/dashboard/clinical-intelligence" },
   { title: "Protocol Intelligence", type: "Workflow", href: "/dashboard/workspace/protocol" },
   { title: "Eligibility Screening", type: "Workflow", href: "/dashboard/workspace/eligibility" },
   { title: "Visit Assistant", type: "Workflow", href: "/dashboard/workspace/visit-assistant" },
