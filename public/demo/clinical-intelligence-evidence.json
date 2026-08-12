@@ -1,0 +1,100 @@
+{
+  "study": {
+    "studyTitle": "TRIALIQ-101 — Phase II Investigational Study",
+    "participantId": "PT-1042"
+  },
+  "sources": [
+    {
+      "id": "protocol-demo.pdf",
+      "type": "Protocol",
+      "facts": [
+        "Hemoglobin screening threshold: >=12.0 g/dL",
+        "ANC screening threshold: >=1.5 ×10⁹/L",
+        "Platelet screening threshold: >=150 ×10⁹/L",
+        "Creatinine screening threshold: <=1.2 mg/dL",
+        "ALT screening threshold: <=45 U/L",
+        "AST screening threshold: <=40 U/L",
+        "Total bilirubin screening threshold: <=1.2 mg/dL",
+        "Prohibited medication and washout requirements must be confirmed against the active protocol.",
+        "Uncontrolled infection, recent major surgery without adequate recovery, prohibited concomitant medication, and clinically significant uncontrolled cardiovascular disease are listed exclusion areas."
+      ]
+    },
+    {
+      "id": "participant-demo.pdf",
+      "type": "Participant Screening",
+      "facts": [
+        "PT-1042 has advanced NSCLC and ECOG 1.",
+        "Measurable thoracic disease is documented.",
+        "Past medical history includes Type 2 diabetes mellitus and hypertension.",
+        "Recent prednisone exposure ended 05-Aug-2026; dose and protocol washout applicability are not documented.",
+        "The participant summary states that several non-laboratory criteria lack affirmative source evidence."
+      ]
+    },
+    {
+      "id": "lab-demo.pdf",
+      "type": "Laboratory",
+      "facts": [
+        "Hemoglobin 10.2 g/dL against 12.0–16.0 g/dL reference range.",
+        "ANC 1.1 ×10⁹/L against 1.5–7.5 ×10⁹/L reference range.",
+        "Platelets 145 ×10⁹/L against 150–400 ×10⁹/L reference range.",
+        "WBC 4.8 ×10⁹/L within 4.0–11.0 ×10⁹/L.",
+        "Creatinine 1.4 mg/dL against 0.6–1.2 mg/dL reference range.",
+        "ALT 82 U/L against 7–45 U/L reference range.",
+        "AST 76 U/L against 10–40 U/L reference range.",
+        "Total bilirubin 1.1 mg/dL within 0.2–1.2 mg/dL."
+      ]
+    },
+    {
+      "id": "medication-demo.pdf",
+      "type": "Medication",
+      "facts": [
+        "Current medications include Ondansetron, Metformin, Lisinopril and Omeprazole.",
+        "Prednisone was documented from 01-Aug-2026 through 05-Aug-2026.",
+        "Amoxicillin was documented from 20-Jul-2026 through 27-Jul-2026.",
+        "Prednisone dose, route and full protocol restriction context are not documented."
+      ]
+    },
+    {
+      "id": "adverse-event-demo.pdf",
+      "type": "Adverse Event",
+      "facts": [
+        "Grade 2 nausea with intermittent vomiting began 05-Aug-2026 approximately 18 hours after study treatment.",
+        "The event was assessed as moderate and not serious in the initial report.",
+        "Preliminary investigator causality was possibly related.",
+        "Study dose was temporarily held and oral antiemetic therapy was initiated.",
+        "The event was recovering but ongoing at the time of the initial report.",
+        "Expectedness and final causality are not documented."
+      ]
+    },
+    {
+      "id": "deviation-demo.pdf",
+      "type": "Protocol Deviation",
+      "facts": [
+        "Day 15 visit window was Day 13 through Day 17; actual visit occurred Day 21.",
+        "CBC was collected on Day 21 rather than within the Day 15 visit window.",
+        "Transportation issues are documented as the reason.",
+        "Deviation severity and final investigator impact assessment are not documented."
+      ]
+    },
+    {
+      "id": "safety-demo.pdf",
+      "type": "Safety",
+      "facts": [
+        "Four safety events are documented for PT-1042: elevated liver enzymes, neutropenia, Grade 2 nausea/vomiting and mild anemia.",
+        "No hospitalization or life-threatening event is documented.",
+        "The safety source explicitly states that this is a single-participant observation and does not establish a population-level safety signal.",
+        "Protocol dose-modification thresholds and repeat-testing requirements are not provided in the safety source."
+      ]
+    },
+    {
+      "id": "medical-coding-demo.pdf",
+      "type": "Medical Coding",
+      "facts": [
+        "Eight verbatim clinical terms are presented for coding review.",
+        "Six terms are adverse-event terms and two are past medical history terms.",
+        "The source does not contain an active MedDRA dictionary version or final numeric codes.",
+        "Elevated blood pressure must not automatically be treated as equivalent to the documented past medical history of hypertension."
+      ]
+    }
+  ]
+}
