@@ -28,15 +28,22 @@ test.describe("TrialIQ live clinical AI QA — Eligibility", () => {
 
     const responsePromise = page.waitForResponse(
       (response) => response.url().includes("/api/analyze") && response.request().method() === "POST",
-      { timeout: 30_000 }
+      { timeout: 60_000 }
     );
 
     await page.getByRole("button", { name: /analyze eligibility/i }).click();
 
     const response = await responsePromise;
-    expect(response.ok()).toBeTruthy();
-
     const payload = await response.json();
+
+    console.log("ELIGIBILITY API STATUS:", response.status());
+    console.log("ELIGIBILITY API RESPONSE:", JSON.stringify(payload, null, 2));
+
+    expect(
+      response.ok(),
+      `Eligibility API returned HTTP ${response.status()}: ${JSON.stringify(payload)}`
+    ).toBeTruthy();
+
     expect(payload.success).toBeTruthy();
     expect(payload.result).toBeTruthy();
 
