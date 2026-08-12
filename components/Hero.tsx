@@ -49,7 +49,7 @@ export default function Hero() {
               <div className="mt-8 flex flex-wrap gap-3">
 
                 <Link
-                  href="/dashboard/workspace"
+                  href="/dashboard"
                   className="group inline-flex items-center gap-2 rounded-md bg-blue-700 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-800 hover:shadow-lg"
                 >
                   Launch Workspace
@@ -59,12 +59,12 @@ export default function Hero() {
                   />
                 </Link>
 
-                <a
-                  href="#modules"
+                <Link
+                  href="/dashboard/workspace"
                   className="inline-flex items-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-500 hover:text-slate-950"
                 >
                   Explore Modules
-                </a>
+                </Link>
 
               </div>
 
