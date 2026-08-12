@@ -8,6 +8,30 @@ import {
   setSafetySignals,
 } from "@/lib/dashboardStore";
 
+function isJsonParseError(error: unknown) {
+  if (error instanceof SyntaxError) return true;
+
+  const message = String((error as any)?.message ?? error ?? "").toLowerCase();
+  return (
+    message.includes("json.parse") ||
+    message.includes("expected double-quoted property name") ||
+    message.includes("unexpected token")
+  );
+}
+
+async function analyzeSafetySignalsWithRetry(document: string, fileName?: string) {
+  try {
+    return await analyzeSafetySignals(document, fileName);
+  } catch (error) {
+    // Gemini occasionally returns malformed JSON even when JSON response mode
+    // is requested. Retry once so a transient formatting failure does not
+    // surface as a 500 to the user.
+    if (!isJsonParseError(error)) throw error;
+
+    return await analyzeSafetySignals(document, fileName);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -22,7 +46,7 @@ export async function POST(req: Request) {
     }
 
     const result = addClinicalAuditMetadata(
-      await analyzeSafetySignals(document, fileName),
+      await analyzeSafetySignalsWithRetry(document, fileName),
       "Safety Signal Detection"
     );
 
