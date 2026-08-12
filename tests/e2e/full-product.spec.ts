@@ -50,7 +50,9 @@ test.describe("TrialIQ full authenticated product QA", () => {
       await page.goto(`${baseURL}${route}`);
       await expect(page).toHaveURL(new RegExp(route.replaceAll("/", "\\/")));
       await expect(page.locator("body")).not.toContainText(/application error|internal server error|unhandled runtime error/i);
-      await expect(page.locator("main")).toBeVisible();
+      // The dashboard shell and the route content can both expose <main> landmarks.
+      // Assert against the first visible main landmark to avoid strict-mode failures.
+      await expect(page.getByRole("main").first()).toBeVisible();
     });
   }
 
