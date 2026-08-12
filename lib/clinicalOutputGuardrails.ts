@@ -12,16 +12,67 @@ export function hardenClinicalOutput(module: string, result: any, sourceText = "
     if (typeof value === "string") return normalizeLabText(value);
     if (Array.isArray(value)) return value.map(normalizeLabOutput);
     if (value && typeof value === "object") {
-      for (const key of Object.keys(value)) {
-        value[key] = normalizeLabOutput(value[key]);
-      }
+      for (const key of Object.keys(value)) value[key] = normalizeLabOutput(value[key]);
     }
     return value;
   };
 
-  if (module === "Laboratory Intelligence") {
-    normalizeLabOutput(result);
-  }
+  const isEvidenceGap = (value: unknown) =>
+    /\b(not documented|unknown|insufficient evidence|not provided|not available|cannot be determined|pending(?:\s|$)|unable to determine)\b/i.test(
+      String(value ?? "")
+    );
+
+  const hardenEligibilityEvidence = () => {
+    const groups = [
+      result?.criteriaEvaluation?.inclusion,
+      result?.criteriaEvaluation?.exclusion,
+    ].filter(Array.isArray) as any[][];
+
+    let pendingCount = 0;
+    let correctedUnsupportedMet = 0;
+
+    for (const criteria of groups) {
+      for (const criterion of criteria) {
+        if (!criterion || typeof criterion !== "object") continue;
+
+        const actualGap = isEvidenceGap(criterion.actual);
+        const evidenceGap = isEvidenceGap(criterion.evidence);
+        const status = String(criterion.status ?? "");
+
+        // Absence of documentation is never proof that a criterion was met.
+        // This is deliberately deterministic so the model cannot turn a
+        // missing source field into a positive eligibility finding.
+        if (status === "Met" && (actualGap || evidenceGap)) {
+          criterion.status = "Pending";
+          criterion.reviewRequired = true;
+          correctedUnsupportedMet += 1;
+        }
+
+        if (criterion.status === "Pending" || criterion.status === "Requires Review") {
+          criterion.reviewRequired = true;
+          pendingCount += 1;
+        }
+      }
+    }
+
+    if (pendingCount > 0) {
+      result.pendingAssessments = Array.isArray(result.pendingAssessments) ? result.pendingAssessments : [];
+      result.confidence = Math.min(Number(result.confidence ?? 100), correctedUnsupportedMet > 0 ? 85 : 90);
+
+      const hasDefinitiveFailure = groups.some((criteria) =>
+        criteria.some((criterion) => criterion?.status === "Not Met")
+      );
+
+      if (!hasDefinitiveFailure && result.screeningResult === "Eligible") {
+        result.eligible = false;
+        result.screeningResult = "Pending Review";
+      }
+    }
+  };
+
+  if (module === "Laboratory Intelligence") normalizeLabOutput(result);
+
+  if (module === "Eligibility Screening") hardenEligibilityEvidence();
 
   if (module === "Safety Signal Detection" && Array.isArray(result.signals)) {
     const participantCount = Number(result.participantsReviewed);
@@ -66,9 +117,7 @@ export function hardenClinicalOutput(module: string, result: any, sourceText = "
 
   if (module === "Adverse Event Assessment") {
     const missing = Array.isArray(result.missingInformation) ? result.missingInformation : [];
-    if (missing.length > 0 && result.reviewStatus === "Confirmed") {
-      result.reviewStatus = "Requires Review";
-    }
+    if (missing.length > 0 && result.reviewStatus === "Confirmed") result.reviewStatus = "Requires Review";
   }
 
   if (module === "Concomitant Medication Review" && Array.isArray(result.potentialProtocolConcerns)) {
