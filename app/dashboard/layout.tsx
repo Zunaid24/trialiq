@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight, Check, CheckCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const menu = [
@@ -29,11 +29,26 @@ const moduleResults = [
 ];
 
 type SearchResult = { title: string; type: string; href: string; detail?: string };
+type Notification = { id: string; type: string; title: string; message: string | null; href: string | null; read_at: string | null; created_at: string };
+
+function formatNotificationTime(value: string) {
+  const date = new Date(value);
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("Clinical Research");
   const [ready, setReady] = useState(false);
@@ -41,6 +56,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  const loadNotifications = async () => {
+    setNotificationsLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("notifications")
+      .select("id,type,title,message,href,read_at,created_at")
+      .order("created_at", { ascending: false })
+      .limit(12);
+    setNotifications((data ?? []) as Notification[]);
+    setNotificationsLoading(false);
+  };
 
   useEffect(() => {
     const supabase = createClient();
@@ -54,6 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setEmail(data.user.email ?? "");
       setName(data.user.user_metadata?.full_name || "Clinical Research");
       await supabase.rpc("touch_profile_last_seen");
+      await loadNotifications();
       setReady(true);
     });
 
@@ -68,7 +99,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) setSearchOpen(false);
+      const target = event.target as Node;
+      if (searchRef.current && !searchRef.current.contains(target)) setSearchOpen(false);
+      if (notificationRef.current && !notificationRef.current.contains(target)) setNotificationOpen(false);
     }
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
@@ -86,38 +119,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setSearching(true);
       const supabase = createClient();
       const pattern = `%${value}%`;
-
       const [studies, participants, documents, findings] = await Promise.all([
         supabase.from("studies").select("id,name,protocol_name").or(`name.ilike.${pattern},protocol_name.ilike.${pattern}`).limit(5),
         supabase.from("participants").select("id,participant_code,study_id").ilike("participant_code", pattern).limit(5),
         supabase.from("documents").select("id,name,document_type").or(`name.ilike.${pattern},document_type.ilike.${pattern}`).limit(5),
         supabase.from("findings").select("id,title,summary,analysis_type").or(`title.ilike.${pattern},summary.ilike.${pattern},analysis_type.ilike.${pattern}`).limit(5),
       ]);
-
       const dbResults: SearchResult[] = [
         ...(studies.data ?? []).map((item) => ({ title: item.name, type: "Study", href: "/dashboard", detail: item.protocol_name || "Study record" })),
         ...(participants.data ?? []).map((item) => ({ title: item.participant_code, type: "Participant", href: "/dashboard", detail: "Participant record" })),
         ...(documents.data ?? []).map((item) => ({ title: item.name, type: "Document", href: "/dashboard", detail: item.document_type || "Clinical document" })),
         ...(findings.data ?? []).map((item) => ({ title: item.title, type: "Finding", href: "/dashboard", detail: item.analysis_type || item.summary || "Finding requiring review" })),
       ];
-
-      const moduleMatches = moduleResults
-        .filter((item) => item.title.toLowerCase().includes(value.toLowerCase()))
-        .slice(0, 5);
-
-      if (mounted) {
-        setResults([...moduleMatches, ...dbResults].slice(0, 10));
-        setSearching(false);
-        setSearchOpen(true);
-      }
+      const moduleMatches = moduleResults.filter((item) => item.title.toLowerCase().includes(value.toLowerCase())).slice(0, 5);
+      setResults([...moduleMatches, ...dbResults].slice(0, 10));
+      setSearching(false);
+      setSearchOpen(true);
     }, 250);
-
-    let mounted = true;
-    return () => {
-      mounted = false;
-      window.clearTimeout(timer);
-    };
+    return () => window.clearTimeout(timer);
   }, [query]);
+
+  async function markNotificationRead(id: string, href?: string | null) {
+    const supabase = createClient();
+    await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
+    setNotifications((current) => current.map((item) => item.id === id ? { ...item, read_at: new Date().toISOString() } : item));
+    if (href) router.push(href);
+    setNotificationOpen(false);
+  }
+
+  async function markAllNotificationsRead() {
+    const supabase = createClient();
+    const unreadIds = notifications.filter((item) => !item.read_at).map((item) => item.id);
+    if (unreadIds.length) {
+      const now = new Date().toISOString();
+      await supabase.from("notifications").update({ read_at: now }).in("id", unreadIds);
+      setNotifications((current) => current.map((item) => ({ ...item, read_at: item.read_at || now })));
+    }
+  }
 
   async function signOut() {
     const supabase = createClient();
@@ -130,6 +168,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setResults([]);
     setSearchOpen(false);
   }
+
+  const unreadCount = notifications.filter((item) => !item.read_at).length;
 
   if (!ready) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><div className="text-sm font-medium text-slate-500">Loading your TrialIQ workspace…</div></div>;
 
@@ -163,44 +203,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div ref={searchRef} className="relative w-full max-w-xl">
             <div className={`flex w-full items-center gap-3 rounded-lg border bg-secondary px-4 py-3 text-sm transition ${searchOpen ? "border-blue-300 ring-2 ring-blue-50" : "border-border focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-50"}`}>
               <Search size={17} className="shrink-0 text-muted-foreground" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onFocus={() => query.trim() && setSearchOpen(true)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") clearSearch();
-                  if (event.key === "Enter" && results[0]) router.push(results[0].href);
-                }}
-                aria-label="Search TrialIQ"
-                placeholder="Search participants, protocols, documents, findings…"
-                className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-              />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => query.trim() && setSearchOpen(true)} onKeyDown={(event) => { if (event.key === "Escape") clearSearch(); if (event.key === "Enter" && results[0]) router.push(results[0].href); }} aria-label="Search TrialIQ" placeholder="Search participants, protocols, documents, findings…" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />
               {searching && <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700" aria-label="Searching" />}
               {!searching && query && <button onClick={clearSearch} className="rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Clear search"><X size={15} /></button>}
             </div>
-
-            {searchOpen && query.trim() && (
-              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                <div className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Search results</div>
-                {results.length > 0 ? results.map((result) => (
-                  <Link key={`${result.type}-${result.title}-${result.href}`} href={result.href} onClick={() => setSearchOpen(false)} className="flex items-center justify-between gap-4 px-4 py-3 transition hover:bg-slate-50">
-                    <div className="min-w-0"><p className="truncate text-sm font-medium text-slate-900">{result.title}</p><p className="mt-0.5 truncate text-xs text-slate-500">{result.type}{result.detail ? ` · ${result.detail}` : ""}</p></div>
-                    <ArrowRight size={15} className="shrink-0 text-slate-300" />
-                  </Link>
-                )) : !searching ? (
-                  <div className="px-4 py-6 text-center"><p className="text-sm font-medium text-slate-700">No matches found</p><p className="mt-1 text-xs text-slate-500">Try a participant ID, study name, document or finding.</p></div>
-                ) : null}
-                <div className="border-t border-slate-100 bg-slate-50 px-4 py-2 text-[11px] text-slate-400">Searches your TrialIQ workspace and workflows</div>
-              </div>
-            )}
+            {searchOpen && query.trim() && <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"><div className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Search results</div>{results.length > 0 ? results.map((result) => <Link key={`${result.type}-${result.title}-${result.href}`} href={result.href} onClick={() => setSearchOpen(false)} className="flex items-center justify-between gap-4 px-4 py-3 transition hover:bg-slate-50"><div className="min-w-0"><p className="truncate text-sm font-medium text-slate-900">{result.title}</p><p className="mt-0.5 truncate text-xs text-slate-500">{result.type}{result.detail ? ` · ${result.detail}` : ""}</p></div><ArrowRight size={15} className="shrink-0 text-slate-300" /></Link>) : !searching ? <div className="px-4 py-6 text-center"><p className="text-sm font-medium text-slate-700">No matches found</p><p className="mt-1 text-xs text-slate-500">Try a participant ID, study name, document or finding.</p></div> : null}<div className="border-t border-slate-100 bg-slate-50 px-4 py-2 text-[11px] text-slate-400">Searches your TrialIQ workspace and workflows</div></div>}
           </div>
 
           <div className="ml-8 flex shrink-0 items-center gap-4">
-            <button className="rounded-lg border border-border p-2.5 text-muted-foreground transition hover:text-foreground" aria-label="Notifications"><Bell size={17} /></button>
-            <div className="flex items-center gap-3 border-l border-border pl-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 font-mono text-sm font-medium text-white">{(name || email || "T").charAt(0).toUpperCase()}</div>
-              <div><p className="text-sm font-semibold text-foreground">{name}</p><p className="max-w-48 truncate text-xs text-muted-foreground">{email}</p></div>
+            <div ref={notificationRef} className="relative">
+              <button onClick={() => { setNotificationOpen((open) => !open); if (!notificationOpen) loadNotifications(); }} className={`relative rounded-lg border p-2.5 transition ${notificationOpen ? "border-blue-300 bg-blue-50 text-blue-700" : "border-border text-muted-foreground hover:text-foreground"}`} aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`} aria-expanded={notificationOpen}>
+                <Bell size={17} />
+                {unreadCount > 0 && <span className="absolute -right-1.5 -top-1.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 font-mono text-[9px] font-bold text-white ring-2 ring-card">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+              </button>
+
+              {notificationOpen && <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
+                  <div><h3 className="text-sm font-semibold text-slate-950">Notifications</h3><p className="mt-0.5 text-xs text-slate-500">{unreadCount ? `${unreadCount} require${unreadCount === 1 ? "s" : ""} your attention` : "You're all caught up"}</p></div>
+                  {unreadCount > 0 && <button onClick={markAllNotificationsRead} className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800"><CheckCheck size={14} />Mark all read</button>}
+                </div>
+                <div className="max-h-[420px] overflow-y-auto">
+                  {notificationsLoading ? <div className="px-4 py-10 text-center text-sm text-slate-500">Loading notifications…</div> : notifications.length === 0 ? <div className="px-6 py-10 text-center"><div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400"><Bell size={17} /></div><p className="mt-3 text-sm font-medium text-slate-800">No notifications yet</p><p className="mt-1 text-xs leading-5 text-slate-500">New clinical findings and review items will appear here.</p></div> : notifications.map((notification) => <button key={notification.id} onClick={() => markNotificationRead(notification.id, notification.href)} className={`flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3.5 text-left transition hover:bg-slate-50 ${!notification.read_at ? "bg-blue-50/40" : "bg-white"}`}><div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${!notification.read_at ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>{!notification.read_at ? <Bell size={15} /> : <Check size={15} />}</div><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><p className={`text-sm ${!notification.read_at ? "font-semibold text-slate-950" : "font-medium text-slate-700"}`}>{notification.title}</p><span className="shrink-0 text-[10px] text-slate-400">{formatNotificationTime(notification.created_at)}</span></div>{notification.message && <p className="mt-1 text-xs leading-5 text-slate-500">{notification.message}</p>}</div>{!notification.read_at && <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-700" />}</button>)}
+                </div>
+                <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-[11px] text-slate-400">Notifications are private to your TrialIQ account.</div>
+              </div>}
             </div>
+            <div className="flex items-center gap-3 border-l border-border pl-4"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 font-mono text-sm font-medium text-white">{(name || email || "T").charAt(0).toUpperCase()}</div><div><p className="text-sm font-semibold text-foreground">{name}</p><p className="max-w-48 truncate text-xs text-muted-foreground">{email}</p></div></div>
           </div>
         </header>
 
