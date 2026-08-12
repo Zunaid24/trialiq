@@ -7,6 +7,25 @@ export default function AnalysisReport({ report }: Props) {
 
   const reviewItems = report.pendingAssessments ?? [];
   const evidenceQuality = report.evidenceQuality ?? "Not assessed";
+  const criteria = [
+    ...(report.criteriaEvaluation?.inclusion ?? []),
+    ...(report.criteriaEvaluation?.exclusion ?? []),
+  ];
+  const failedCriteria = criteria.filter((item: any) => String(item?.status ?? "").toLowerCase().includes("not met"));
+  const pendingCriteria = criteria.filter((item: any) => {
+    const status = String(item?.status ?? "").toLowerCase();
+    return status.includes("pending") || status.includes("review");
+  });
+
+  const headlineStatus = failedCriteria.length
+    ? "Not Eligible — confirmed criterion failed"
+    : pendingCriteria.length || reviewItems.length
+      ? "Pending Review — additional assessments required"
+      : report.screeningResult ?? "Screening Complete";
+
+  const extractionConfidence = report.audit?.extractionConfidence ?? report.confidence;
+  const assessmentConfidence = report.audit?.assessmentConfidence ?? report.assessmentConfidence;
+  const audit = report.audit;
 
   return (
     <div className="mt-12 space-y-8">
@@ -14,57 +33,59 @@ export default function AnalysisReport({ report }: Props) {
         <div className="border-b border-slate-100 bg-slate-50 px-8 py-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="font-mono text-xs font-semibold uppercase tracking-wider text-blue-700">
-                AI-assisted eligibility review
-              </p>
-              <h2 className="mt-2 text-3xl font-bold text-slate-950">
-                {report.studyTitle ?? "Clinical Trial"}
-              </h2>
+              <p className="font-mono text-xs font-semibold uppercase tracking-wider text-blue-700">AI-assisted eligibility review</p>
+              <h2 className="mt-2 text-3xl font-bold text-slate-950">{report.studyTitle ?? "Clinical Trial"}</h2>
             </div>
-            <span className={`rounded-full px-4 py-2 text-sm font-semibold ${report.eligible ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-              {report.screeningResult ?? "Screening Complete"}
+            <span className={`rounded-full px-4 py-2 text-sm font-semibold ${failedCriteria.length ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+              {headlineStatus}
             </span>
           </div>
           <p className="mt-4 max-w-4xl leading-7 text-slate-600">
-            {report.executiveSummary ?? report.reasonForIneligibility ?? "Clinical trial screening analysis completed."}
+            {failedCriteria.length
+              ? `${failedCriteria.length} eligibility criterion is explicitly not met. ${pendingCriteria.length ? `${pendingCriteria.length} additional assessment${pendingCriteria.length === 1 ? " remains" : "s remain"} pending.` : ""}`
+              : report.executiveSummary ?? report.reasonForIneligibility ?? "Clinical trial screening analysis completed."}
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-px bg-slate-100 md:grid-cols-5">
           <Metric label="Participant" value={report.participantId ?? "--"} />
-          <Metric label="Eligibility" value={report.screeningResult ?? "--"} />
+          <Metric label="Review status" value={headlineStatus} />
           <Metric label="Eligibility score" value={report.eligibilityScore != null ? `${report.eligibilityScore}%` : "--"} />
           <Metric label="Evidence quality" value={evidenceQuality} />
-          <Metric label="AI confidence" value={report.confidence != null ? `${report.confidence}%` : "--"} />
+          <Metric label="Evidence confidence" value={extractionConfidence != null ? `${extractionConfidence}%` : "--"} />
         </div>
       </div>
 
-      {(report.confidenceRationale || report.limitations?.length) && (
-        <Section title="Evidence quality">
-          {report.confidenceRationale && <p className="leading-7 text-slate-700">{report.confidenceRationale}</p>}
-          {report.limitations?.length ? (
-            <div className="mt-4 space-y-2">
-              {report.limitations.map((item: string, index: number) => <p key={index} className="text-sm text-slate-600">• {item}</p>)}
-            </div>
-          ) : null}
-        </Section>
-      )}
+      <Section title="Confidence and audit context">
+        <div className="grid gap-4 md:grid-cols-2">
+          <AuditCard label="Evidence / extraction confidence" value={extractionConfidence != null ? `${extractionConfidence}%` : "Not reported"} detail="Reflects completeness and consistency of the supplied evidence, not probability of clinical truth." />
+          <AuditCard label="Clinical assessment confidence" value={assessmentConfidence != null ? `${assessmentConfidence}%` : "Not assigned"} detail="TrialIQ does not independently make the final clinical decision." />
+        </div>
+        {report.confidenceRationale && <p className="mt-5 leading-7 text-slate-700">{report.confidenceRationale}</p>}
+        {report.limitations?.length ? <div className="mt-4 space-y-2">{report.limitations.map((item: string, index: number) => <p key={index} className="text-sm text-slate-600">• {item}</p>)}</div> : null}
+        {audit && (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+            <p><span className="font-semibold text-slate-800">Generated:</span> {audit.generatedAt ? new Date(audit.generatedAt).toLocaleString() : "Not recorded"}</p>
+            <p className="mt-1"><span className="font-semibold text-slate-800">Model strategy:</span> {audit.modelStrategy ?? "Not recorded"}</p>
+            <p className="mt-1"><span className="font-semibold text-slate-800">Fallback:</span> {audit.fallbackUsed === true ? "Used" : audit.fallbackUsed === false ? "Not used" : "Enabled; selected model not exposed"}</p>
+            <p className="mt-1"><span className="font-semibold text-slate-800">Source references:</span> {audit.sourceReferences?.length ?? 0}</p>
+          </div>
+        )}
+      </Section>
 
       <Section title="Review first">
         <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
           <p className="font-semibold text-blue-950">
-            {reviewItems.length ? `${reviewItems.length} item${reviewItems.length === 1 ? "" : "s"} require human review` : "No pending assessments returned"}
+            {reviewItems.length ? `${reviewItems.length} item${reviewItems.length === 1 ? "" : "s"} require human review` : pendingCriteria.length ? `${pendingCriteria.length} criterion${pendingCriteria.length === 1 ? " remains" : "s remain"} pending` : "No pending assessments returned"}
           </p>
-          <p className="mt-1 text-sm leading-6 text-blue-800">
-            TrialIQ surfaces evidence and potential issues; the clinical team remains responsible for the final decision.
-          </p>
+          <p className="mt-1 text-sm leading-6 text-blue-800">TrialIQ surfaces evidence and potential issues; the clinical team remains responsible for the final decision.</p>
         </div>
       </Section>
 
       {report.reasonForIneligibility && (
         <Section title="Primary finding">
           <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-            <h3 className="font-semibold text-red-900">Potential exclusion identified</h3>
+            <h3 className="font-semibold text-red-900">Confirmed failed criterion</h3>
             <p className="mt-2 leading-7 text-red-800">{report.reasonForIneligibility}</p>
           </div>
         </Section>
@@ -72,9 +93,7 @@ export default function AnalysisReport({ report }: Props) {
 
       {report.executiveSummary && !report.reasonForIneligibility && (
         <Section title="Clinical finding">
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-            <p className="leading-7 text-blue-900">{report.executiveSummary}</p>
-          </div>
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5"><p className="leading-7 text-blue-900">{report.executiveSummary}</p></div>
         </Section>
       )}
 
@@ -104,18 +123,15 @@ export default function AnalysisReport({ report }: Props) {
 
       <Section title="Coordinator recommendations">
         {report.recommendations?.length ? (
-          <div className="space-y-3">
-            {report.recommendations.map((recommendation: string, index: number) => (
-              <div key={index} className="rounded-xl border bg-slate-50 p-4 flex gap-3">
-                <span className="font-semibold text-blue-700">{index + 1}.</span>
-                <p className="leading-6 text-slate-700">{recommendation}</p>
-              </div>
-            ))}
-          </div>
+          <div className="space-y-3">{report.recommendations.map((recommendation: string, index: number) => <div key={index} className="flex gap-3 rounded-xl border bg-slate-50 p-4"><span className="font-semibold text-blue-700">{index + 1}.</span><p className="leading-6 text-slate-700">{recommendation}</p></div>)}</div>
         ) : <p className="text-slate-500">No recommendations available.</p>}
       </Section>
     </div>
   );
+}
+
+function AuditCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-2 text-xl font-bold text-slate-900">{value}</p><p className="mt-2 text-sm leading-6 text-slate-500">{detail}</p></div>;
 }
 
 function Metric({ label, value }: { label: string; value: string | number }) {
@@ -130,21 +146,7 @@ function Criterion({ item }: { item: any }) {
   const status = item.status ?? "Unknown";
   const normalized = status.toLowerCase();
   const badge = normalized.includes("pending") || normalized.includes("review") ? "bg-amber-100 text-amber-700" : normalized.includes("not met") ? "bg-red-100 text-red-700" : normalized.includes("met") ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700";
-  return (
-    <div className="rounded-xl border border-slate-200 p-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <p className="font-medium text-slate-900">{item.criterion}</p>
-          <div className="mt-2 space-y-1 text-sm text-slate-500">
-            {item.expected && <p><span className="font-medium text-slate-600">Protocol requires:</span> {item.expected}</p>}
-            {item.actual && <p><span className="font-medium text-slate-600">Participant record:</span> {item.actual}</p>}
-          </div>
-          {item.evidence && <Evidence evidence={item.evidence} source={item.sourceReference} />}
-        </div>
-        <span className={`w-fit shrink-0 rounded-full px-3 py-1 text-sm font-medium ${badge}`}>{status}</span>
-      </div>
-    </div>
-  );
+  return <div className="rounded-xl border border-slate-200 p-4"><div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"><div className="min-w-0"><p className="font-medium text-slate-900">{item.criterion}</p><div className="mt-2 space-y-1 text-sm text-slate-500">{item.expected && <p><span className="font-medium text-slate-600">Protocol requires:</span> {item.expected}</p>}{item.actual && <p><span className="font-medium text-slate-600">Participant record:</span> {item.actual}</p>}</div>{item.evidence && <Evidence evidence={item.evidence} source={item.sourceReference} />}</div><span className={`w-fit shrink-0 rounded-full px-3 py-1 text-sm font-medium ${badge}`}>{status}</span></div></div>;
 }
 
 function Evidence({ evidence, source }: { evidence: string; source?: string }) {
