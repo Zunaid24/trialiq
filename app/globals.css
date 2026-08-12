@@ -67,45 +67,45 @@ body {
 }
 
 :root {
-  --background: #F5F7F9;
-  --foreground: #0B1E3A;
+  --background: #F8FAFC;
+  --foreground: #0F172A;
   --card: #FFFFFF;
-  --card-foreground: #0B1E3A;
+  --card-foreground: #0F172A;
   --popover: #FFFFFF;
-  --popover-foreground: #0B1E3A;
-  --primary: #0B1E3A;
+  --popover-foreground: #0F172A;
+  --primary: #1D4ED8;
   --primary-foreground: #FFFFFF;
-  --secondary: #EEF1F5;
-  --secondary-foreground: #0B1E3A;
-  --muted: #EEF1F5;
-  --muted-foreground: #5B6B84;
-  --accent: #E4F1F1;
-  --accent-foreground: #085861;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #0F172A;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #EFF6FF;
+  --accent-foreground: #1D4ED8;
   --destructive: #DC2626;
-  --border: #E1E6ED;
-  --input: #E1E6ED;
-  --ring: #0E7C86;
-  --chart-1: #0E7C86;
-  --chart-2: #0B1E3A;
-  --chart-3: #5B6B84;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #1D4ED8;
+  --chart-1: #1D4ED8;
+  --chart-2: #0F172A;
+  --chart-3: #64748B;
   --chart-4: #B45309;
-  --chart-5: #C7CFDA;
+  --chart-5: #CBD5E1;
   --radius: 0.625rem;
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #0B1E3A;
-  --sidebar-primary: #0E7C86;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #1D4ED8;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E4F1F1;
-  --sidebar-accent-foreground: #085861;
-  --sidebar-border: #E1E6ED;
-  --sidebar-ring: #0E7C86;
+  --sidebar-accent: #EFF6FF;
+  --sidebar-accent-foreground: #1D4ED8;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #1D4ED8;
 
-  /* Brand accent (teal) — used for links, active states, primary CTAs */
-  --brand: #0E7C86;
-  --brand-strong: #085861;
+  /* Brand accent (blue) — aligned with the landing page */
+  --brand: #1D4ED8;
+  --brand-strong: #1E40AF;
   --brand-foreground: #FFFFFF;
 
-  /* Safety / signal accent (amber) — used for warnings and flagged items */
+  /* Safety / signal accent (amber) — reserved for warnings and flagged items */
   --signal: #B45309;
   --signal-foreground: #FBF0E4;
 }
