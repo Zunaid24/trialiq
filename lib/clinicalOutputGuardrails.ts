@@ -1,14 +1,26 @@
 export function hardenClinicalOutput(module: string, result: any, sourceText = "") {
   if (!result || typeof result !== "object") return result;
 
-  if (module === "Laboratory Intelligence" && Array.isArray(result.labs)) {
-    for (const lab of result.labs) {
-      if (!lab || typeof lab !== "object" || typeof lab.unit !== "string") continue;
-      lab.unit = lab.unit
-        .replace(/×10\s*n\s*\/L/gi, "×10⁹/L")
-        .replace(/x10\s*n\s*\/L/gi, "×10⁹/L")
-        .replace(/×10\^?9\s*\/L/gi, "×10⁹/L");
+  const normalizeLabText = (value: string) =>
+    value
+      .replace(/×10\s*n\s*\/L/gi, "×10⁹/L")
+      .replace(/x10\s*n\s*\/L/gi, "×10⁹/L")
+      .replace(/×10\^?9\s*\/L/gi, "×10⁹/L")
+      .replace(/x10\^?9\s*\/L/gi, "×10⁹/L");
+
+  const normalizeLabOutput = (value: any): any => {
+    if (typeof value === "string") return normalizeLabText(value);
+    if (Array.isArray(value)) return value.map(normalizeLabOutput);
+    if (value && typeof value === "object") {
+      for (const key of Object.keys(value)) {
+        value[key] = normalizeLabOutput(value[key]);
+      }
     }
+    return value;
+  };
+
+  if (module === "Laboratory Intelligence") {
+    normalizeLabOutput(result);
   }
 
   if (module === "Safety Signal Detection" && Array.isArray(result.signals)) {
@@ -16,15 +28,19 @@ export function hardenClinicalOutput(module: string, result: any, sourceText = "
     if (participantCount === 1) {
       result.signals = result.signals.map((signal: any) => {
         if (!signal || typeof signal !== "object") return signal;
-        if (signal.status === "Potential Signal") signal.status = "Pattern Observed";
-        if (signal.frequency && !String(signal.frequency).includes("single-participant")) {
+        signal.status = "Pattern Observed";
+        if (signal.frequency && !String(signal.frequency).includes("single-participant observation")) {
           signal.frequency = `${signal.frequency} — single-participant observation`;
         }
         return signal;
       });
+
       result.notablePatterns = Array.isArray(result.notablePatterns) ? result.notablePatterns : [];
       const note = "Single-participant observation; this dataset does not establish a population-level safety signal.";
       if (!result.notablePatterns.includes(note)) result.notablePatterns.push(note);
+
+      result.overallSafetyStatus = "Requires Review — Pattern Observed";
+      result.summary = `${String(result.summary ?? "").replace(/\.$/, "")}. This is a single-participant observation and does not establish a population-level safety signal.`;
     }
   }
 
@@ -38,7 +54,6 @@ export function hardenClinicalOutput(module: string, result: any, sourceText = "
           .filter((value: string) => {
             const normalized = value.toLowerCase().trim();
             const source = sourceText.toLowerCase();
-            // Prevent unsupported diagnostic alternatives such as inferring migraine from headache.
             const diagnosticTerms = ["migraine", "pneumonia", "sepsis", "heart failure", "stroke", "cancer"];
             return !diagnosticTerms.includes(normalized) || source.includes(normalized);
           })
