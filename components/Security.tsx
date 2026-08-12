@@ -11,11 +11,11 @@ export default function Security() {
   return (
     <section
       id="security"
-      className="bg-white px-5 py-20 md:px-8"
+      className="bg-white px-5 py-14 md:px-8"
     >
       <div className="mx-auto max-w-[1180px]">
 
-        <div className="mb-10 max-w-3xl">
+        <div className="mb-7 max-w-3xl">
 
           <p className="font-mono text-xs font-medium uppercase tracking-wider text-blue-700">
             Security & Explainability
