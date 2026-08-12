@@ -6,7 +6,15 @@ import { useEffect, useRef, useState } from "react";
 import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight, CheckCheck, ListChecks, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-const menu = [
+type MenuItem = { title: string; href: string; icon: typeof LayoutDashboard };
+type SearchResult = { title: string; type: string; href: string; detail?: string };
+type Notification = { id: string; type: string; title: string; message: string | null; href: string | null; read_at: string | null; created_at: string };
+type StudyRow = { name: string; protocol_name: string | null };
+type ParticipantRow = { participant_code: string };
+type DocumentRow = { name: string; document_type: string | null };
+type FindingRow = { title: string; summary: string | null; analysis_type: string | null };
+
+const menu: MenuItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Clinical Intelligence", href: "/dashboard/clinical-intelligence", icon: Sparkles },
   { title: "Review Queue", href: "/dashboard/review-queue", icon: ListChecks },
@@ -30,9 +38,6 @@ const moduleResults = [
   { title: "Clinical Data Reconciliation", type: "Workflow", href: "/dashboard/workspace/reconciliation" },
   { title: "Medical Coding Intelligence", type: "Workflow", href: "/dashboard/workspace/medical-coding" },
 ];
-
-type SearchResult = { title: string; type: string; href: string; detail?: string };
-type Notification = { id: string; type: string; title: string; message: string | null; href: string | null; read_at: string | null; created_at: string };
 
 function formatNotificationTime(value: string) {
   const date = new Date(value);
@@ -114,10 +119,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         supabase.from("findings").select("id,title,summary,analysis_type").or(`title.ilike.${pattern},summary.ilike.${pattern},analysis_type.ilike.${pattern}`).limit(5),
       ]);
       const dbResults: SearchResult[] = [
-        ...(studies.data ?? []).map((item) => ({ title: item.name, type: "Study", href: "/dashboard", detail: item.protocol_name || "Study record" })),
-        ...(participants.data ?? []).map((item) => ({ title: item.participant_code, type: "Participant", href: "/dashboard", detail: "Participant record" })),
-        ...(documents.data ?? []).map((item) => ({ title: item.name, type: "Document", href: "/dashboard", detail: item.document_type || "Clinical document" })),
-        ...(findings.data ?? []).map((item) => ({ title: item.title, type: "Finding", href: "/dashboard", detail: item.analysis_type || item.summary || "Finding requiring review" })),
+        ...(studies.data ?? []).map((item: StudyRow) => ({ title: item.name, type: "Study", href: "/dashboard", detail: item.protocol_name || "Study record" })),
+        ...(participants.data ?? []).map((item: ParticipantRow) => ({ title: item.participant_code, type: "Participant", href: "/dashboard", detail: "Participant record" })),
+        ...(documents.data ?? []).map((item: DocumentRow) => ({ title: item.name, type: "Document", href: "/dashboard", detail: item.document_type || "Clinical document" })),
+        ...(findings.data ?? []).map((item: FindingRow) => ({ title: item.title, type: "Finding", href: "/dashboard", detail: item.analysis_type || item.summary || "Finding requiring review" })),
       ];
       const moduleMatches = moduleResults.filter((item) => item.title.toLowerCase().includes(value.toLowerCase())).slice(0, 5);
       setResults([...moduleMatches, ...dbResults].slice(0, 10));
