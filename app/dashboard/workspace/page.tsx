@@ -106,7 +106,7 @@ export default function WorkspacePage() {
           Clinical Workspace
         </h1>
 
-        <p className="mt-3 text-slate-500">
+        <p className="mt-3 text-muted-foreground">
           Select an AI module to begin.
         </p>
 
@@ -121,14 +121,14 @@ export default function WorkspacePage() {
             <Link
               key={module.title}
               href={module.href}
-              className="group rounded-3xl border bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
+              className="group rounded-3xl border bg-card p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
             >
 
               <div className="flex items-center justify-between">
 
-                <div className="rounded-2xl bg-blue-50 p-4">
+                <div className="rounded-2xl bg-accent p-4">
                   <Icon
-                    className="text-blue-600"
+                    className="text-brand"
                     size={28}
                   />
                 </div>
@@ -137,7 +137,7 @@ export default function WorkspacePage() {
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     module.status === "LIVE"
                       ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
+                      : "bg-signal/10 text-signal"
                   }`}
                 >
                   {module.status}
@@ -149,11 +149,11 @@ export default function WorkspacePage() {
                 {module.title}
               </h2>
 
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-3 text-sm text-muted-foreground">
                 {module.description}
               </p>
 
-              <div className="mt-8 font-semibold text-blue-600 group-hover:translate-x-1 transition">
+              <div className="mt-8 font-semibold text-brand group-hover:translate-x-1 transition">
                 Open Module →
               </div>
 

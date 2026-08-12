@@ -1,0 +1,1058 @@
+diff --git a/app/dashboard/layout.tsx b/app/dashboard/layout.tsx
+index 448fddc..247b4e5 100644
+--- a/app/dashboard/layout.tsx
++++ b/app/dashboard/layout.tsx
+@@ -1,4 +1,7 @@
++"use client";
++
+ import Link from "next/link";
++import { usePathname } from "next/navigation";
+ import {
+   LayoutDashboard,
+   ClipboardCheck,
+@@ -48,37 +51,52 @@ export default function DashboardLayout({
+ }: {
+   children: React.ReactNode;
+ }) {
++  const pathname = usePathname();
++
+   return (
+-    <div className="flex min-h-screen bg-slate-100">
++    <div className="flex min-h-screen bg-background">
+ 
+       {/* Sidebar */}
+ 
+-      <aside className="w-72 border-r bg-white">
++      <aside className="w-72 border-r border-border bg-card">
+ 
+-        <div className="border-b p-8">
++        <div className="border-b border-border p-8">
+ 
+-          <h1 className="text-3xl font-bold text-blue-600">
+-            TrialIQ AI
+-          </h1>
++          <div className="flex items-center gap-2.5">
++            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-brand to-brand-strong font-mono text-sm font-medium text-brand-foreground">
++              iq
++            </span>
++            <h1 className="text-xl font-bold tracking-tight text-foreground">
++              TrialIQ AI
++            </h1>
++          </div>
+ 
+-          <p className="mt-2 text-sm text-slate-500">
++          <p className="mt-2 text-sm text-muted-foreground">
+             Clinical AI Platform
+           </p>
+ 
+         </div>
+ 
+-        <nav className="space-y-2 p-5">
++        <nav className="space-y-1 p-4">
+ 
+           {menu.map((item) => {
+             const Icon = item.icon;
++            const isActive =
++              item.href === "/dashboard"
++                ? pathname === item.href
++                : pathname.startsWith(item.href);
+ 
+             return (
+               <Link
+                 key={item.title}
+                 href={item.href}
+-                className="flex items-center gap-4 rounded-2xl px-4 py-3 text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
++                className={`flex items-center gap-3.5 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
++                  isActive
++                    ? "bg-accent text-accent-foreground"
++                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
++                }`}
+               >
+-                <Icon size={20} />
++                <Icon size={18} />
+ 
+                 {item.title}
+               </Link>
+@@ -95,38 +113,38 @@ export default function DashboardLayout({
+ 
+         {/* Topbar */}
+ 
+-        <header className="flex items-center justify-between border-b bg-white px-8 py-5">
++        <header className="flex items-center justify-between border-b border-border bg-card px-8 py-4">
+ 
+-          <div className="flex items-center gap-3 rounded-2xl border bg-slate-50 px-4 py-3">
++          <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm">
+ 
+-            <Search size={18} />
++            <Search size={16} className="text-muted-foreground" />
+ 
+             <input
+-              placeholder="Search..."
+-              className="bg-transparent outline-none"
++              placeholder="Search participants, protocols, sites…"
++              className="w-64 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+             />
+ 
+           </div>
+ 
+-          <div className="flex items-center gap-5">
++          <div className="flex items-center gap-4">
+ 
+-            <button className="rounded-xl border p-3">
+-              <Bell size={18} />
++            <button className="rounded-lg border border-border p-2.5 text-muted-foreground transition hover:text-foreground">
++              <Bell size={17} />
+             </button>
+ 
+-            <div className="flex items-center gap-3">
++            <div className="flex items-center gap-3 border-l border-border pl-4">
+ 
+-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 font-semibold text-white">
++              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand font-mono text-sm font-medium text-brand-foreground">
+                 A
+               </div>
+ 
+               <div>
+ 
+-                <p className="font-semibold">
++                <p className="text-sm font-semibold text-foreground">
+                   Admin
+                 </p>
+ 
+-                <p className="text-xs text-slate-500">
++                <p className="text-xs text-muted-foreground">
+                   Clinical Research
+                 </p>
+ 
+diff --git a/app/dashboard/page.tsx b/app/dashboard/page.tsx
+index 145a96a..669c477 100644
+--- a/app/dashboard/page.tsx
++++ b/app/dashboard/page.tsx
+@@ -115,9 +115,9 @@ export default function DashboardPage() {
+ 
+   if (loading) {
+     return (
+-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
++      <main className="flex min-h-screen items-center justify-center bg-background">
+ 
+-        <div className="flex items-center gap-3 text-slate-600">
++        <div className="flex items-center gap-3 text-muted-foreground">
+ 
+           <Loader2
+             size={22}
+@@ -134,9 +134,9 @@ export default function DashboardPage() {
+ 
+   if (error || !data) {
+     return (
+-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
++      <main className="flex min-h-screen items-center justify-center bg-background">
+ 
+-        <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
++        <div className="rounded-2xl border bg-card p-8 text-center shadow-sm">
+ 
+           <AlertCircle
+             size={32}
+@@ -147,7 +147,7 @@ export default function DashboardPage() {
+             Dashboard unavailable
+           </h1>
+ 
+-          <p className="mt-2 text-sm text-slate-500">
++          <p className="mt-2 text-sm text-muted-foreground">
+             {error ||
+               "Unable to load study intelligence."}
+           </p>
+@@ -228,7 +228,7 @@ export default function DashboardPage() {
+   ];
+ 
+   return (
+-    <main className="min-h-screen bg-slate-50">
++    <main className="min-h-screen bg-background">
+ 
+       <div className="mx-auto max-w-7xl p-8 md:p-10">
+ 
+@@ -236,7 +236,7 @@ export default function DashboardPage() {
+ 
+         <div className="mb-10">
+ 
+-          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-blue-600">
++          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand">
+ 
+             <Activity size={16} />
+ 
+@@ -248,11 +248,11 @@ export default function DashboardPage() {
+ 
+             <div>
+ 
+-              <h1 className="text-4xl font-bold text-slate-900">
++              <h1 className="text-4xl font-bold text-foreground">
+                 Study Dashboard
+               </h1>
+ 
+-              <p className="mt-2 max-w-3xl text-slate-500">
++              <p className="mt-2 max-w-3xl text-muted-foreground">
+                 Clinical trial intelligence, safety,
+                 protocol compliance and coordinator
+                 actions in one place.
+@@ -260,13 +260,13 @@ export default function DashboardPage() {
+ 
+             </div>
+ 
+-            <div className="rounded-xl border bg-white px-4 py-3 text-sm shadow-sm">
++            <div className="rounded-xl border bg-card px-4 py-3 text-sm shadow-sm">
+ 
+-              <p className="text-xs text-slate-400">
++              <p className="text-xs text-muted-foreground">
+                 Study
+               </p>
+ 
+-              <p className="font-semibold text-slate-900">
++              <p className="font-semibold text-foreground">
+                 {data.study.id}
+               </p>
+ 
+@@ -283,11 +283,11 @@ export default function DashboardPage() {
+ 
+           <div className="mb-5">
+ 
+-            <h2 className="text-2xl font-bold text-slate-900">
++            <h2 className="text-2xl font-bold text-foreground">
+               Trial Analytics
+             </h2>
+ 
+-            <p className="mt-1 text-sm text-slate-500">
++            <p className="mt-1 text-sm text-muted-foreground">
+               Current study-level intelligence
+             </p>
+ 
+@@ -303,12 +303,12 @@ export default function DashboardPage() {
+                 <Link
+                   key={kpi.label}
+                   href={kpi.href}
+-                  className="group rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
++                  className="group rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                 >
+ 
+                   <div className="flex items-start justify-between">
+ 
+-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
++                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-brand">
+ 
+                       <Icon size={21} />
+ 
+@@ -316,20 +316,20 @@ export default function DashboardPage() {
+ 
+                     <ArrowRight
+                       size={17}
+-                      className="text-slate-300 transition group-hover:text-blue-600"
++                      className="text-muted-foreground/40 transition group-hover:text-brand"
+                     />
+ 
+                   </div>
+ 
+-                  <p className="mt-5 text-sm text-slate-500">
++                  <p className="mt-5 text-sm text-muted-foreground">
+                     {kpi.label}
+                   </p>
+ 
+-                  <p className="mt-1 text-3xl font-bold text-slate-900">
++                  <p className="mt-1 text-3xl font-bold text-foreground">
+                     {kpi.value}
+                   </p>
+ 
+-                  <p className="mt-2 text-xs font-medium text-slate-400">
++                  <p className="mt-2 text-xs font-medium text-muted-foreground">
+                     {kpi.change}
+                   </p>
+ 
+@@ -350,18 +350,18 @@ export default function DashboardPage() {
+ 
+             <div>
+ 
+-              <h2 className="text-2xl font-bold text-slate-900">
++              <h2 className="text-2xl font-bold text-foreground">
+                 Coordinator Action Center
+               </h2>
+ 
+-              <p className="mt-1 text-sm text-slate-500">
++              <p className="mt-1 text-sm text-muted-foreground">
+                 Issues requiring attention across the
+                 study.
+               </p>
+ 
+             </div>
+ 
+-            <div className="hidden items-center gap-2 text-sm text-slate-500 md:flex">
++            <div className="hidden items-center gap-2 text-sm text-muted-foreground md:flex">
+ 
+               <Clock3 size={16} />
+ 
+@@ -372,21 +372,21 @@ export default function DashboardPage() {
+           </div>
+ 
+ 
+-          <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
++          <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+ 
+             {actions.map((action) => (
+ 
+               <Link
+                 key={action.id}
+                 href={action.href}
+-                className="group flex flex-col gap-4 border-b p-5 transition last:border-b-0 hover:bg-slate-50 md:flex-row md:items-center"
++                className="group flex flex-col gap-4 border-b p-5 transition last:border-b-0 hover:bg-background md:flex-row md:items-center"
+               >
+ 
+                 <div
+                   className={`flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${
+                     action.priority === "HIGH"
+                       ? "bg-red-100 text-red-700"
+-                      : "bg-yellow-100 text-yellow-700"
++                      : "bg-signal/10 text-signal"
+                   }`}
+                 >
+ 
+@@ -404,15 +404,15 @@ export default function DashboardPage() {
+ 
+                 <div className="min-w-0 flex-1">
+ 
+-                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
++                  <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+                     {action.type}
+                   </p>
+ 
+-                  <p className="mt-1 font-semibold text-slate-900">
++                  <p className="mt-1 font-semibold text-foreground">
+                     {action.title}
+                   </p>
+ 
+-                  <p className="mt-1 text-sm text-slate-500">
++                  <p className="mt-1 text-sm text-muted-foreground">
+                     {action.participant}
+                   </p>
+ 
+@@ -421,11 +421,11 @@ export default function DashboardPage() {
+ 
+                 <div className="flex items-center gap-4">
+ 
+-                  <span className="text-xs text-slate-400">
++                  <span className="text-xs text-muted-foreground">
+                     {action.time}
+                   </span>
+ 
+-                  <span className="text-sm font-semibold text-blue-600">
++                  <span className="text-sm font-semibold text-brand">
+                     Review →
+                   </span>
+ 
+@@ -446,17 +446,17 @@ export default function DashboardPage() {
+ 
+           {/* STUDY HEALTH */}
+ 
+-          <section className="rounded-2xl border bg-white p-6 shadow-sm">
++          <section className="rounded-2xl border bg-card p-6 shadow-sm">
+ 
+             <div className="flex items-center justify-between">
+ 
+               <div>
+ 
+-                <h2 className="text-xl font-bold text-slate-900">
++                <h2 className="text-xl font-bold text-foreground">
+                   Study Health
+                 </h2>
+ 
+-                <p className="mt-1 text-sm text-slate-500">
++                <p className="mt-1 text-sm text-muted-foreground">
+                   High-level operational indicators
+                 </p>
+ 
+@@ -511,15 +511,15 @@ export default function DashboardPage() {
+ 
+           {/* RECENT INTELLIGENCE */}
+ 
+-          <section className="rounded-2xl border bg-white p-6 shadow-sm">
++          <section className="rounded-2xl border bg-card p-6 shadow-sm">
+ 
+             <div>
+ 
+-              <h2 className="text-xl font-bold text-slate-900">
++              <h2 className="text-xl font-bold text-foreground">
+                 Recent Intelligence
+               </h2>
+ 
+-              <p className="mt-1 text-sm text-slate-500">
++              <p className="mt-1 text-sm text-muted-foreground">
+                 Latest activity generated by TrialIQ
+               </p>
+ 
+@@ -547,7 +547,7 @@ export default function DashboardPage() {
+                     className="flex gap-4"
+                   >
+ 
+-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
++                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+ 
+                       <Icon size={18} />
+ 
+@@ -555,15 +555,15 @@ export default function DashboardPage() {
+ 
+                     <div className="min-w-0">
+ 
+-                      <p className="font-medium text-slate-900">
++                      <p className="font-medium text-foreground">
+                         {item.title}
+                       </p>
+ 
+-                      <p className="mt-1 text-sm text-slate-500">
++                      <p className="mt-1 text-sm text-muted-foreground">
+                         {item.description}
+                       </p>
+ 
+-                      <p className="mt-1 text-xs text-slate-400">
++                      <p className="mt-1 text-xs text-muted-foreground">
+                         {item.time}
+                       </p>
+ 
+@@ -600,20 +600,20 @@ function HealthRow({
+ 
+       <div className="mb-2 flex items-center justify-between">
+ 
+-        <span className="text-sm font-medium text-slate-700">
++        <span className="text-sm font-medium text-foreground">
+           {label}
+         </span>
+ 
+-        <span className="text-sm font-semibold text-slate-900">
++        <span className="text-sm font-semibold text-foreground">
+           {value}
+         </span>
+ 
+       </div>
+ 
+-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
++      <div className="h-2 overflow-hidden rounded-full bg-muted">
+ 
+         <div
+-          className="h-full rounded-full bg-blue-600"
++          className="h-full rounded-full bg-brand"
+           style={{
+             width: `${progress}%`,
+           }}
+diff --git a/app/dashboard/workspace/page.tsx b/app/dashboard/workspace/page.tsx
+index 2cefd27..1fda3ae 100644
+--- a/app/dashboard/workspace/page.tsx
++++ b/app/dashboard/workspace/page.tsx
+@@ -106,7 +106,7 @@ export default function WorkspacePage() {
+           Clinical Workspace
+         </h1>
+ 
+-        <p className="mt-3 text-slate-500">
++        <p className="mt-3 text-muted-foreground">
+           Select an AI module to begin.
+         </p>
+ 
+@@ -121,14 +121,14 @@ export default function WorkspacePage() {
+             <Link
+               key={module.title}
+               href={module.href}
+-              className="group rounded-3xl border bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
++              className="group rounded-3xl border bg-card p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
+             >
+ 
+               <div className="flex items-center justify-between">
+ 
+-                <div className="rounded-2xl bg-blue-50 p-4">
++                <div className="rounded-2xl bg-accent p-4">
+                   <Icon
+-                    className="text-blue-600"
++                    className="text-brand"
+                     size={28}
+                   />
+                 </div>
+@@ -137,7 +137,7 @@ export default function WorkspacePage() {
+                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                     module.status === "LIVE"
+                       ? "bg-green-100 text-green-700"
+-                      : "bg-yellow-100 text-yellow-700"
++                      : "bg-signal/10 text-signal"
+                   }`}
+                 >
+                   {module.status}
+@@ -149,11 +149,11 @@ export default function WorkspacePage() {
+                 {module.title}
+               </h2>
+ 
+-              <p className="mt-3 text-sm text-slate-500">
++              <p className="mt-3 text-sm text-muted-foreground">
+                 {module.description}
+               </p>
+ 
+-              <div className="mt-8 font-semibold text-blue-600 group-hover:translate-x-1 transition">
++              <div className="mt-8 font-semibold text-brand group-hover:translate-x-1 transition">
+                 Open Module →
+               </div>
+ 
+diff --git a/app/globals.css b/app/globals.css
+index 567d784..57d87d1 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -20,6 +20,12 @@ body {
+ @theme inline {
+   --font-heading: var(--font-sans);
+   --font-sans: var(--font-sans);
++  --font-mono: var(--font-mono);
++  --color-brand: var(--brand);
++  --color-brand-strong: var(--brand-strong);
++  --color-brand-foreground: var(--brand-foreground);
++  --color-signal: var(--signal);
++  --color-signal-foreground: var(--signal-foreground);
+   --color-sidebar-ring: var(--sidebar-ring);
+   --color-sidebar-border: var(--sidebar-border);
+   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+@@ -61,38 +67,47 @@ body {
+ }
+ 
+ :root {
+-  --background: oklch(1 0 0);
+-  --foreground: oklch(0.145 0 0);
+-  --card: oklch(1 0 0);
+-  --card-foreground: oklch(0.145 0 0);
+-  --popover: oklch(1 0 0);
+-  --popover-foreground: oklch(0.145 0 0);
+-  --primary: oklch(0.205 0 0);
+-  --primary-foreground: oklch(0.985 0 0);
+-  --secondary: oklch(0.97 0 0);
+-  --secondary-foreground: oklch(0.205 0 0);
+-  --muted: oklch(0.97 0 0);
+-  --muted-foreground: oklch(0.556 0 0);
+-  --accent: oklch(0.97 0 0);
+-  --accent-foreground: oklch(0.205 0 0);
+-  --destructive: oklch(0.577 0.245 27.325);
+-  --border: oklch(0.922 0 0);
+-  --input: oklch(0.922 0 0);
+-  --ring: oklch(0.708 0 0);
+-  --chart-1: oklch(0.87 0 0);
+-  --chart-2: oklch(0.556 0 0);
+-  --chart-3: oklch(0.439 0 0);
+-  --chart-4: oklch(0.371 0 0);
+-  --chart-5: oklch(0.269 0 0);
++  --background: #F5F7F9;
++  --foreground: #0B1E3A;
++  --card: #FFFFFF;
++  --card-foreground: #0B1E3A;
++  --popover: #FFFFFF;
++  --popover-foreground: #0B1E3A;
++  --primary: #0B1E3A;
++  --primary-foreground: #FFFFFF;
++  --secondary: #EEF1F5;
++  --secondary-foreground: #0B1E3A;
++  --muted: #EEF1F5;
++  --muted-foreground: #5B6B84;
++  --accent: #E4F1F1;
++  --accent-foreground: #085861;
++  --destructive: #DC2626;
++  --border: #E1E6ED;
++  --input: #E1E6ED;
++  --ring: #0E7C86;
++  --chart-1: #0E7C86;
++  --chart-2: #0B1E3A;
++  --chart-3: #5B6B84;
++  --chart-4: #B45309;
++  --chart-5: #C7CFDA;
+   --radius: 0.625rem;
+-  --sidebar: oklch(0.985 0 0);
+-  --sidebar-foreground: oklch(0.145 0 0);
+-  --sidebar-primary: oklch(0.205 0 0);
+-  --sidebar-primary-foreground: oklch(0.985 0 0);
+-  --sidebar-accent: oklch(0.97 0 0);
+-  --sidebar-accent-foreground: oklch(0.205 0 0);
+-  --sidebar-border: oklch(0.922 0 0);
+-  --sidebar-ring: oklch(0.708 0 0);
++  --sidebar: #FFFFFF;
++  --sidebar-foreground: #0B1E3A;
++  --sidebar-primary: #0E7C86;
++  --sidebar-primary-foreground: #FFFFFF;
++  --sidebar-accent: #E4F1F1;
++  --sidebar-accent-foreground: #085861;
++  --sidebar-border: #E1E6ED;
++  --sidebar-ring: #0E7C86;
++
++  /* Brand accent (teal) — used for links, active states, primary CTAs */
++  --brand: #0E7C86;
++  --brand-strong: #085861;
++  --brand-foreground: #FFFFFF;
++
++  /* Safety / signal accent (amber) — used for warnings and flagged items */
++  --signal: #B45309;
++  --signal-foreground: #FBF0E4;
+ }
+ 
+ .dark {
+diff --git a/app/layout.tsx b/app/layout.tsx
+index eaf4bd7..bdc18a1 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -1,12 +1,19 @@
+ import type { Metadata } from "next";
+-import { Inter } from "next/font/google";
++import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+ import "./globals.css";
+ 
+-const inter = Inter({
++const plexSans = IBM_Plex_Sans({
+   subsets: ["latin"],
++  weight: ["400", "500", "600", "700"],
+   variable: "--font-sans",
+ });
+ 
++const plexMono = IBM_Plex_Mono({
++  subsets: ["latin"],
++  weight: ["400", "500"],
++  variable: "--font-mono",
++});
++
+ export const metadata: Metadata = {
+   title: "TrialIQ AI",
+   description: "AI-powered Clinical Trial Screening Intelligence",
+@@ -18,7 +25,7 @@ export default function RootLayout({
+   children: React.ReactNode;
+ }>) {
+   return (
+-    <html lang="en" className={inter.variable}>
++    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
+       <body>{children}</body>
+     </html>
+   );
+diff --git a/package-lock.json b/package-lock.json
+index 8c8b7fc..59887d2 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1184,9 +1184,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1203,9 +1200,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1222,9 +1216,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1241,9 +1232,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1260,9 +1248,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1279,9 +1264,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1298,9 +1280,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1317,9 +1296,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1336,9 +1312,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1361,9 +1334,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1386,9 +1356,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1411,9 +1378,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1436,9 +1400,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1461,9 +1422,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1486,9 +1444,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1511,9 +1466,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1845,9 +1797,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1868,9 +1817,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1891,9 +1837,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1914,9 +1857,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1937,9 +1877,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2103,9 +2040,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2122,9 +2056,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2141,9 +2072,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2160,9 +2088,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2473,9 +2398,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2493,9 +2415,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2513,9 +2432,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2533,9 +2449,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3172,9 +3085,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3189,9 +3099,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3206,9 +3113,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3223,9 +3127,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3240,9 +3141,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3257,9 +3155,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3274,9 +3169,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3291,9 +3183,6 @@
+         "s390x"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3308,9 +3197,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3325,9 +3211,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -7305,9 +7188,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -7329,9 +7209,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -7353,9 +7230,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -7377,9 +7251,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [

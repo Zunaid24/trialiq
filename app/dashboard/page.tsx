@@ -115,9 +115,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+      <main className="flex min-h-screen items-center justify-center bg-background">
 
-        <div className="flex items-center gap-3 text-slate-600">
+        <div className="flex items-center gap-3 text-muted-foreground">
 
           <Loader2
             size={22}
@@ -134,9 +134,9 @@ export default function DashboardPage() {
 
   if (error || !data) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+      <main className="flex min-h-screen items-center justify-center bg-background">
 
-        <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
+        <div className="rounded-2xl border bg-card p-8 text-center shadow-sm">
 
           <AlertCircle
             size={32}
@@ -147,7 +147,7 @@ export default function DashboardPage() {
             Dashboard unavailable
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-muted-foreground">
             {error ||
               "Unable to load study intelligence."}
           </p>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-background">
 
       <div className="mx-auto max-w-7xl p-8 md:p-10">
 
@@ -236,7 +236,7 @@ export default function DashboardPage() {
 
         <div className="mb-10">
 
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-blue-600">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand">
 
             <Activity size={16} />
 
@@ -248,11 +248,11 @@ export default function DashboardPage() {
 
             <div>
 
-              <h1 className="text-4xl font-bold text-slate-900">
+              <h1 className="text-4xl font-bold text-foreground">
                 Study Dashboard
               </h1>
 
-              <p className="mt-2 max-w-3xl text-slate-500">
+              <p className="mt-2 max-w-3xl text-muted-foreground">
                 Clinical trial intelligence, safety,
                 protocol compliance and coordinator
                 actions in one place.
@@ -260,13 +260,13 @@ export default function DashboardPage() {
 
             </div>
 
-            <div className="rounded-xl border bg-white px-4 py-3 text-sm shadow-sm">
+            <div className="rounded-xl border bg-card px-4 py-3 text-sm shadow-sm">
 
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 Study
               </p>
 
-              <p className="font-semibold text-slate-900">
+              <p className="font-semibold text-foreground">
                 {data.study.id}
               </p>
 
@@ -283,11 +283,11 @@ export default function DashboardPage() {
 
           <div className="mb-5">
 
-            <h2 className="text-2xl font-bold text-slate-900">
+            <h2 className="text-2xl font-bold text-foreground">
               Trial Analytics
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Current study-level intelligence
             </p>
 
@@ -303,12 +303,12 @@ export default function DashboardPage() {
                 <Link
                   key={kpi.label}
                   href={kpi.href}
-                  className="group rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  className="group rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
 
                   <div className="flex items-start justify-between">
 
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-brand">
 
                       <Icon size={21} />
 
@@ -316,20 +316,20 @@ export default function DashboardPage() {
 
                     <ArrowRight
                       size={17}
-                      className="text-slate-300 transition group-hover:text-blue-600"
+                      className="text-muted-foreground/40 transition group-hover:text-brand"
                     />
 
                   </div>
 
-                  <p className="mt-5 text-sm text-slate-500">
+                  <p className="mt-5 text-sm text-muted-foreground">
                     {kpi.label}
                   </p>
 
-                  <p className="mt-1 text-3xl font-bold text-slate-900">
+                  <p className="mt-1 text-3xl font-bold text-foreground">
                     {kpi.value}
                   </p>
 
-                  <p className="mt-2 text-xs font-medium text-slate-400">
+                  <p className="mt-2 text-xs font-medium text-muted-foreground">
                     {kpi.change}
                   </p>
 
@@ -350,18 +350,18 @@ export default function DashboardPage() {
 
             <div>
 
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className="text-2xl font-bold text-foreground">
                 Coordinator Action Center
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Issues requiring attention across the
                 study.
               </p>
 
             </div>
 
-            <div className="hidden items-center gap-2 text-sm text-slate-500 md:flex">
+            <div className="hidden items-center gap-2 text-sm text-muted-foreground md:flex">
 
               <Clock3 size={16} />
 
@@ -372,21 +372,21 @@ export default function DashboardPage() {
           </div>
 
 
-          <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
 
             {actions.map((action) => (
 
               <Link
                 key={action.id}
                 href={action.href}
-                className="group flex flex-col gap-4 border-b p-5 transition last:border-b-0 hover:bg-slate-50 md:flex-row md:items-center"
+                className="group flex flex-col gap-4 border-b p-5 transition last:border-b-0 hover:bg-background md:flex-row md:items-center"
               >
 
                 <div
                   className={`flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${
                     action.priority === "HIGH"
                       ? "bg-red-100 text-red-700"
-                      : "bg-yellow-100 text-yellow-700"
+                      : "bg-signal/10 text-signal"
                   }`}
                 >
 
@@ -404,15 +404,15 @@ export default function DashboardPage() {
 
                 <div className="min-w-0 flex-1">
 
-                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-brand">
                     {action.type}
                   </p>
 
-                  <p className="mt-1 font-semibold text-slate-900">
+                  <p className="mt-1 font-semibold text-foreground">
                     {action.title}
                   </p>
 
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {action.participant}
                   </p>
 
@@ -421,11 +421,11 @@ export default function DashboardPage() {
 
                 <div className="flex items-center gap-4">
 
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-muted-foreground">
                     {action.time}
                   </span>
 
-                  <span className="text-sm font-semibold text-blue-600">
+                  <span className="text-sm font-semibold text-brand">
                     Review →
                   </span>
 
@@ -446,17 +446,17 @@ export default function DashboardPage() {
 
           {/* STUDY HEALTH */}
 
-          <section className="rounded-2xl border bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border bg-card p-6 shadow-sm">
 
             <div className="flex items-center justify-between">
 
               <div>
 
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-foreground">
                   Study Health
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   High-level operational indicators
                 </p>
 
@@ -511,15 +511,15 @@ export default function DashboardPage() {
 
           {/* RECENT INTELLIGENCE */}
 
-          <section className="rounded-2xl border bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border bg-card p-6 shadow-sm">
 
             <div>
 
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-foreground">
                 Recent Intelligence
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Latest activity generated by TrialIQ
               </p>
 
@@ -547,7 +547,7 @@ export default function DashboardPage() {
                     className="flex gap-4"
                   >
 
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
 
                       <Icon size={18} />
 
@@ -555,15 +555,15 @@ export default function DashboardPage() {
 
                     <div className="min-w-0">
 
-                      <p className="font-medium text-slate-900">
+                      <p className="font-medium text-foreground">
                         {item.title}
                       </p>
 
-                      <p className="mt-1 text-sm text-slate-500">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {item.description}
                       </p>
 
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {item.time}
                       </p>
 
@@ -600,20 +600,20 @@ function HealthRow({
 
       <div className="mb-2 flex items-center justify-between">
 
-        <span className="text-sm font-medium text-slate-700">
+        <span className="text-sm font-medium text-foreground">
           {label}
         </span>
 
-        <span className="text-sm font-semibold text-slate-900">
+        <span className="text-sm font-semibold text-foreground">
           {value}
         </span>
 
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2 overflow-hidden rounded-full bg-muted">
 
         <div
-          className="h-full rounded-full bg-blue-600"
+          className="h-full rounded-full bg-brand"
           style={{
             width: `${progress}%`,
           }}
