@@ -14,16 +14,15 @@ test.describe("TrialIQ live clinical AI QA — Adverse Events", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await expect(page).toHaveURL(/\/dashboard/);
 
-    await page.getByRole("link", { name: /clinical workspace/i }).click();
-    await page.getByRole("link", { name: /adverse events/i }).click();
-    await page.getByRole("button", { name: "Load Demo" }).click();
+    await page.goto(`${baseURL}/dashboard/workspace/adverse-events`);
+    await page.getByRole("button", { name: "Load Demo Event" }).click();
 
     const responsePromise = page.waitForResponse(
       response => response.url().includes("/api/adverse-events") && response.request().method() === "POST",
       { timeout: 60000 }
     );
 
-    await page.getByRole("button", { name: /analyze adverse events/i }).click();
+    await page.getByRole("button", { name: "Assess Adverse Event" }).click();
 
     const response = await responsePromise;
     expect(response.ok()).toBeTruthy();
