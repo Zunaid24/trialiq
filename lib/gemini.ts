@@ -1,7 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const MODEL = "gemini-3.5-flash";
+
+// Prefer the strongest stable Flash model, then fall back to the existing
+// model and finally a high-throughput Flash-Lite model when the primary
+// model is temporarily unavailable or quota-limited.
+const MODELS = [
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+] as const;
 
 const STANDARD = `
 You are TrialIQ's clinical-trial operations intelligence engine. Write for clinical research coordinators, CRAs, investigators, safety teams and qualified medical coders.
@@ -32,27 +40,69 @@ function parseJson(text: string) {
   return JSON.parse(start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned);
 }
 
+function getErrorStatus(error: any): number | undefined {
+  const direct = Number(error?.status ?? error?.code);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+
+  const message = String(error?.message ?? "");
+  const match = message.match(/(?:code|status)["':\s]+(\d{3})/i);
+  return match ? Number(match[1]) : undefined;
+}
+
+function isQuotaError(error: any) {
+  const status = getErrorStatus(error);
+  const message = String(error?.message ?? error ?? "").toLowerCase();
+  return status === 429 || message.includes("resource_exhausted") || message.includes("quota exceeded");
+}
+
+function isTransientError(error: any) {
+  const status = getErrorStatus(error);
+  return [500, 502, 503, 504].includes(status ?? -1);
+}
+
 async function run(module: string, prompt: string) {
   let lastError: any;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const response = await ai.models.generateContent({
-        model: MODEL,
-        contents: `${STANDARD}\nMODULE: ${module}\n\n${prompt}`,
-        config: { responseMimeType: "application/json", temperature: 0.1 },
-      });
-      return parseJson(response.text ?? "");
-    } catch (error: any) {
-      lastError = error;
-      const retryable = [429, 500, 502, 503, 504].includes(error?.status);
-      if (retryable && attempt < 3) {
-        await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
-        continue;
+
+  for (const model of MODELS) {
+    // Quota errors should move immediately to the next model. Transient
+    // server errors get one short retry on the current model first.
+    const maxAttempts = 2;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: `${STANDARD}\nMODULE: ${module}\n\n${prompt}`,
+          config: { responseMimeType: "application/json" },
+        });
+
+        return parseJson(response.text ?? "");
+      } catch (error: any) {
+        lastError = error;
+        const status = getErrorStatus(error);
+        const quotaError = isQuotaError(error);
+        const transientError = isTransientError(error);
+
+        // 429/quota: don't waste another request against the exhausted model.
+        if (quotaError) break;
+
+        // 5xx: retry once, then move to the next model.
+        if (transientError && attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          continue;
+        }
+
+        // Non-retryable client/request errors should surface immediately.
+        if (!transientError) {
+          throw error;
+        }
+
+        break;
       }
-      throw error;
     }
   }
-  throw lastError ?? new Error("Clinical AI analysis failed.");
+
+  throw lastError ?? new Error("Clinical AI analysis failed across all configured models.");
 }
 
 export async function analyzeClinicalTrial(protocol: string, participant: string) {
