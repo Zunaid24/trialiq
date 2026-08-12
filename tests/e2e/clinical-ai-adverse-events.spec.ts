@@ -31,17 +31,15 @@ test.describe("TrialIQ live clinical AI QA — Adverse Events", () => {
     console.log("ADVERSE EVENTS API STATUS:", response.status());
     console.log("ADVERSE EVENTS API RESPONSE:", JSON.stringify(body, null, 2));
 
-    expect(
-      response.ok(),
-      `Adverse Events API returned HTTP ${response.status()}: ${JSON.stringify(body)}`
-    ).toBeTruthy();
+    expect(response.ok(), `Adverse Events API returned HTTP ${response.status()}: ${JSON.stringify(body)}`).toBeTruthy();
 
     const serialized = JSON.stringify(body);
-
     expect(serialized.length).toBeGreaterThan(100);
     expect(serialized).toMatch(/adverse|event|severity|serious|causality|clinical|evidence|review/i);
-    await expect(page.locator("body")).not.toContainText(/application error|internal server error/i);
+    // An ongoing event with undocumented expectedness remains reviewable.
+    expect(serialized).toContain("Requires Review");
 
+    await expect(page.locator("body")).not.toContainText(/application error|internal server error/i);
     await page.screenshot({ path: "test-results/adverse-events-ai-report.png", fullPage: true });
   });
 });
