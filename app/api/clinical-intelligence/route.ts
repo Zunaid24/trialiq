@@ -3,12 +3,12 @@ import { analyzeClinicalIntelligence } from "@/lib/clinicalIntelligence";
 import { hardenClinicalIntelligence } from "@/lib/clinicalIntelligenceGuardrails";
 import { addClinicalAuditMetadata } from "@/lib/clinicalAudit";
 import { createClient } from "@/lib/supabase/server";
+import { deriveDeterministicProtocolChecks, enrichEvidenceQuality } from "@/lib/clinicalEvidenceReasoning";
+import { evaluateDecisionReadiness } from "@/lib/clinicalDecisionLayer";
+import { scoreClinicalOutput } from "@/lib/clinicalOutputQuality";
+import { buildEvidenceGraph } from "@/lib/clinicalEvidenceGraph";
 
-function priorityScore(value: string) {
-  if (/critical/i.test(value)) return "Critical";
-  if (/high|immediate/i.test(value)) return "High";
-  return "Moderate";
-}
+function priorityScore(value: string) { if (/critical/i.test(value)) return "Critical"; if (/high|immediate/i.test(value)) return "High"; return "Moderate"; }
 
 export async function POST(req: Request) {
   try {
@@ -20,46 +20,49 @@ export async function POST(req: Request) {
     if (!evidencePack) return NextResponse.json({ success: false, message: "Evidence pack is required." }, { status: 400 });
 
     const raw = await analyzeClinicalIntelligence(evidencePack);
-    const result = addClinicalAuditMetadata(hardenClinicalIntelligence(raw), "Clinical Intelligence");
+    const result = enrichEvidenceQuality(hardenClinicalIntelligence(raw), evidencePack);
+    const deterministicProtocolChecks = deriveDeterministicProtocolChecks(evidencePack);
+    if (deterministicProtocolChecks.length) {
+      result.protocolImpact = {
+        affectedCriteria: deterministicProtocolChecks,
+        overallImpact: `${deterministicProtocolChecks.filter((item) => item.status === "Not Met").length} supplied protocol screening criteria are not met; ${deterministicProtocolChecks.filter((item) => item.status === "Pending").length} remain pending because required measurements are unavailable.`,
+      };
+    }
+
+    const contradictions = (result.crossDocumentLinks || []).filter((item: any) => /conflict|contradiction|inconsistent/i.test(`${item.title} ${item.relationship} ${item.clinicalRelevance}`)).length;
+    const highPriority = (result.priorityFindings || []).filter((item: any) => /critical|high/i.test(String(item.priority))).length;
+    const unresolved = (result.dataGaps || []).length + (result.priorityFindings || []).filter((item: any) => item.status === "Requires Review").length;
+    const decision = evaluateDecisionReadiness({ evidenceBackedFindings: result.auditSummary?.evidenceBackedFindings, unresolvedItems: unresolved, highPriorityFindings: highPriority, contradictions, missingEvidence: (result.dataGaps || []).length });
+    result.decisionReadiness = decision.readiness;
+    result.reviewPressure = decision.reviewPressure;
+    result.decisionReasons = decision.reasons;
+    result.quality = scoreClinicalOutput(result);
+    result.evidenceGraph = buildEvidenceGraph(result);
+    result.whatWouldChangeConclusion = Array.isArray(result.whatWouldChangeConclusion) ? result.whatWouldChangeConclusion : (result.dataGaps || []).map((gap: any) => ({ evidenceNeeded: gap.gap, reason: gap.whyItMatters, priority: "Next Review" }));
     const now = new Date().toISOString();
     const studyId = typeof body?.studyId === "string" ? body.studyId : null;
     const participantId = typeof body?.participantId === "string" ? body.participantId : null;
 
     const { data: parent, error: parentError } = await supabase.from("findings").insert({
-      owner_id: user.id,
-      study_id: studyId,
-      participant_id: participantId,
-      analysis_type: "Clinical Intelligence",
-      title: result.executiveDecision || "Clinical intelligence review completed",
-      summary: result.executiveSummary || "Clinical intelligence analysis completed.",
-      confidence: typeof result.confidence === "number" ? result.confidence : null,
-      status: result.decisionReadiness || "Review Required",
-      priority: priorityScore(result.decisionReadiness || "Moderate"),
-      evidence_quality: result.evidenceQuality || null,
-      source_reference: "Clinical Intelligence evidence pack",
-      metadata: { kind: "analysis", evidencePack, result, saved_at: now },
-      source_ids: Array.isArray(result.audit?.sourceReferences) ? result.audit.sourceReferences : [],
+      owner_id: user.id, study_id: studyId, participant_id: participantId, analysis_type: "Clinical Intelligence",
+      title: result.executiveDecision || "Clinical intelligence review completed", summary: result.executiveSummary || "Clinical intelligence analysis completed.",
+      confidence: typeof result.confidence === "number" ? result.confidence : null, status: result.decisionReadiness || "Review Required",
+      priority: priorityScore(result.reviewPressure || "Moderate"), evidence_quality: result.evidenceQuality || null, source_reference: "Clinical Intelligence evidence pack",
+      metadata: { kind: "analysis", evidencePack, result, saved_at: now }, source_ids: Array.isArray(result.audit?.sourceReferences) ? result.audit.sourceReferences : [],
     }).select("id").single();
     if (parentError) throw parentError;
 
     const findings = Array.isArray(result.priorityFindings) ? result.priorityFindings : [];
     if (findings.length) {
       const childRows = findings.map((finding: any) => ({
-        owner_id: user.id,
-        study_id: studyId,
-        participant_id: participantId,
-        parent_finding_id: parent.id,
-        analysis_type: "Clinical Intelligence Finding",
-        title: String(finding.title || finding.finding || "Clinical finding"),
-        summary: String(finding.finding || finding.interpretation || ""),
-        confidence: typeof finding.confidence === "number" ? finding.confidence : null,
-        status: String(finding.status || "Requires Review"),
-        priority: priorityScore(String(finding.priority || "Moderate")),
+        owner_id: user.id, study_id: studyId, participant_id: participantId, parent_finding_id: parent.id,
+        analysis_type: "Clinical Intelligence Finding", title: String(finding.title || finding.finding || "Clinical finding"), summary: String(finding.finding || finding.interpretation || ""),
+        confidence: typeof finding.confidence === "number" ? finding.confidence : null, status: String(finding.status || "Requires Review"), priority: priorityScore(String(finding.priority || "Moderate")),
         evidence_quality: result.evidenceQuality || null,
         source_reference: Array.isArray(finding.evidence) ? finding.evidence.map((item: any) => item.sourceId).filter(Boolean).join(", ") : null,
         source_ids: Array.isArray(finding.evidence) ? finding.evidence.map((item: any) => item.sourceId).filter(Boolean) : [],
-        tags: [String(finding.status || "").toLowerCase(), String(finding.priority || "").toLowerCase()].filter(Boolean),
-        metadata: { kind: "priority_finding", parentFindingId: parent.id, whyItMatters: finding.whyItMatters, interpretation: finding.interpretation, missingEvidence: finding.missingEvidence || [], recommendedAction: finding.recommendedAction, evidence: finding.evidence || [] },
+        tags: [String(finding.findingType || "").toLowerCase(), String(finding.status || "").toLowerCase(), String(finding.priority || "").toLowerCase()].filter(Boolean),
+        metadata: { kind: "priority_finding", parentFindingId: parent.id, findingType: finding.findingType, causality: finding.causality, whyItMatters: finding.whyItMatters, interpretation: finding.interpretation, missingEvidence: finding.missingEvidence || [], recommendedAction: finding.recommendedAction, evidence: finding.evidence || [] },
       }));
       const { error: childError } = await supabase.from("findings").insert(childRows);
       if (childError) console.error("Priority finding persistence error:", childError);
