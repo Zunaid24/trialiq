@@ -6,6 +6,8 @@ import { ArrowRight, Check, LockKeyhole, Mail, ShieldCheck } from "lucide-react"
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://trialiq-ai.vercel.app";
+
 export default function AuthPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -42,7 +44,7 @@ export default function AuthPage() {
           password,
           options: {
             data: { full_name: name },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${SITE_URL}/auth/callback?next=/dashboard`,
           },
         });
 
@@ -78,7 +80,7 @@ export default function AuthPage() {
     setMessage("");
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: `${SITE_URL}/auth/reset-password`,
     });
 
     if (resetError) setError(resetError.message);
