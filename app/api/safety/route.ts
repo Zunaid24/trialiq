@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeSafetySignals } from "@/lib/gemini";
 import { addClinicalAuditMetadata } from "@/lib/clinicalAudit";
+import { hardenClinicalOutput } from "@/lib/clinicalOutputGuardrails";
 
 import {
   addDashboardAction,
@@ -22,7 +23,11 @@ export async function POST(req: Request) {
     }
 
     const result = addClinicalAuditMetadata(
-      await analyzeSafetySignals(document, fileName),
+      hardenClinicalOutput(
+        "Safety Signal Detection",
+        await analyzeSafetySignals(document, fileName),
+        document
+      ),
       "Safety Signal Detection"
     );
 
@@ -37,11 +42,11 @@ export async function POST(req: Request) {
         id: `SAFETY-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         priority,
         type: "Safety Signal",
-        title: signal?.signal || "Potential safety signal identified",
+        title: signal?.signal || "Observed safety pattern",
         participant:
           Array.isArray(signal?.affectedParticipants) && signal.affectedParticipants.length > 0
             ? `${signal.affectedParticipants.length} affected participant${signal.affectedParticipants.length === 1 ? "" : "s"}`
-            : "Multiple participants",
+            : "Participant set not documented",
         time: "Just now",
         href: "/dashboard/workspace/safety",
       });
@@ -51,7 +56,7 @@ export async function POST(req: Request) {
       addDashboardActivity({
         id: `SAFETY-ACT-${Date.now()}`,
         title: "Safety signal analysis completed",
-        description: `${signals.length} potential safety signal${signals.length === 1 ? "" : "s"} identified`,
+        description: `${signals.length} observed safety pattern${signals.length === 1 ? "" : "s"} surfaced for review`,
         time: "Just now",
         type: "safety",
       });
