@@ -19,10 +19,19 @@ EVIDENCE RULES:
 - Never invent patient facts, diagnoses, labs, dates, doses, thresholds, visit windows, codes, frequencies or protocol requirements.
 - Distinguish documented SOURCE FACTS, PROTOCOL REQUIREMENTS and AI INTERPRETATION.
 - If evidence is absent, use "Not documented", "Unknown" or "Insufficient evidence".
+- Absence of a statement is NOT evidence that the opposite is true. Never convert an undocumented item into Met, Present, Absent, No, Confirmed or Eligible.
+- For eligibility/exclusion criteria, status "Met" requires affirmative source evidence supporting the criterion. If the source is silent, use Pending or Requires Review.
+- Never infer a negative clinical finding merely because it is not mentioned.
 - Never silently resolve conflicting documents; surface the conflict.
 - Clinically meaningful findings must include concise evidence and sourceReference when available. Never fabricate page/section numbers.
 - Recommendations are operational review actions only, never treatment advice.
 - Do not independently establish final eligibility, causality, reportability, regulatory significance or final medical coding.
+
+OUTPUT FIDELITY:
+- Preserve source terminology and units unless a normalization is unambiguous.
+- Do not turn a qualitative description into a diagnosis.
+- Do not calculate a protocol threshold, severity grade, frequency, causality or regulatory category unless the source/protocol supports it.
+- If a value is pending confirmation, the corresponding criterion/findings must remain Pending or Requires Review.
 
 STYLE:
 - Specific, concise, clinical-research terminology; no generic chatbot filler.
@@ -63,9 +72,7 @@ function isTransientError(error: any) {
 async function run(module: string, prompt: string) {
   let lastError: any;
 
-  for (const model of MODELS) {
-    // Quota errors should move immediately to the next model. Transient
-    // server errors get one short retry on the current model first.
+  for (const [modelIndex, model] of MODELS.entries()) {
     const maxAttempts = 2;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -76,27 +83,29 @@ async function run(module: string, prompt: string) {
           config: { responseMimeType: "application/json" },
         });
 
-        return parseJson(response.text ?? "");
+        const parsed = parseJson(response.text ?? "");
+
+        // Keep provenance available to the audit layer without asking the
+        // model to generate or guess infrastructure metadata itself.
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          parsed.aiModel = model;
+          parsed.aiFallbackUsed = modelIndex > 0;
+        }
+
+        return parsed;
       } catch (error: any) {
         lastError = error;
-        const status = getErrorStatus(error);
         const quotaError = isQuotaError(error);
         const transientError = isTransientError(error);
 
-        // 429/quota: don't waste another request against the exhausted model.
         if (quotaError) break;
 
-        // 5xx: retry once, then move to the next model.
         if (transientError && attempt < maxAttempts) {
           await new Promise((resolve) => setTimeout(resolve, 1500));
           continue;
         }
 
-        // Non-retryable client/request errors should surface immediately.
-        if (!transientError) {
-          throw error;
-        }
-
+        if (!transientError) throw error;
         break;
       }
     }
@@ -121,7 +130,7 @@ Return:
  "recommendations":[], "evidenceQuality":"High | Moderate | Low", "confidence":0,
  "confidenceRationale":"", "limitations":[]
 }
-Rules: A missing criterion is Pending, not automatically failed. Mark Not Met only when supplied evidence contradicts the protocol. Do not let an overall score override an individual criterion.
+Rules: A missing criterion is Pending, not automatically failed. Mark Not Met only when supplied evidence contradicts the protocol. Mark Met only when supplied evidence affirmatively supports the criterion. Do not let an overall score override an individual criterion. If a required assessment is pending, retain Pending/Requires Review even when other criteria are met.
 
 PROTOCOL:\n${protocol}\n\nPARTICIPANT:\n${participant}`);
 }
