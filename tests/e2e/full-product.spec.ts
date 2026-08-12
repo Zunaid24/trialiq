@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3000";
 const email = process.env.PLAYWRIGHT_EMAIL;
@@ -26,7 +26,7 @@ const routes = [
   ["Team", "/dashboard/team"],
 ] as const;
 
-async function signIn(page: Parameters<Parameters<typeof test>[1]>[0]["page"]) {
+async function signIn(page: Page) {
   await page.goto(`${baseURL}/auth`);
   await page.getByLabel(/email/i).fill(email!);
   await page.getByLabel(/password/i).fill(password!);
