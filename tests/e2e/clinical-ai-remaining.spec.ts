@@ -9,21 +9,24 @@ const cases = [
     name: "Protocol Deviations",
     path: "/dashboard/workspace/deviations",
     endpoint: "/api/deviations",
-    analyze: /Analyze.*Deviation/i,
+    demo: "Load Demo",
+    analyze: "Detect Protocol Deviations",
     content: /deviation|protocol|finding|evidence|review/i,
   },
   {
     name: "Safety Signals",
     path: "/dashboard/workspace/safety",
     endpoint: "/api/safety",
-    analyze: /Analyze.*Safety/i,
+    demo: "Load Demo",
+    analyze: "Detect Safety Signals",
     content: /safety|signal|risk|finding|evidence|review/i,
   },
   {
     name: "Medical Coding",
     path: "/dashboard/workspace/medical-coding",
     endpoint: "/api/medical-coding",
-    analyze: /Analyze.*Coding/i,
+    demo: "Load Demo",
+    analyze: "Analyze & Suggest Codes",
     content: /coding|code|clinical|finding|evidence|review/i,
   },
 ];
@@ -39,9 +42,10 @@ test.describe("TrialIQ live clinical AI QA — remaining modules", () => {
       await page.getByRole("button", { name: /sign in/i }).click();
       await expect(page).toHaveURL(/\/dashboard/);
 
-      await page.getByRole("link", { name: /clinical workspace/i }).click();
-      await page.getByRole("link", { name: new RegExp(item.name, "i") }).click();
-      await page.getByRole("button", { name: "Load Demo" }).click();
+      // Use the route directly so this test validates the module workflow,
+      // not the sidebar's presentation label.
+      await page.goto(`${baseURL}${item.path}`);
+      await page.getByRole("button", { name: item.demo }).click();
 
       const responsePromise = page.waitForResponse(
         response => response.url().includes(item.endpoint) && response.request().method() === "POST",
