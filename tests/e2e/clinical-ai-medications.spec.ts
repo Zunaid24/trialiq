@@ -26,9 +26,13 @@ test.describe("TrialIQ live clinical AI QA — Medication Review", () => {
     await page.getByRole("button", { name: "Analyze Medications" }).click();
 
     const response = await responsePromise;
-    expect(response.ok()).toBeTruthy();
-
     const body = await response.json();
+
+    console.log("MEDICATION API STATUS:", response.status());
+    console.log("MEDICATION API RESPONSE:", JSON.stringify(body, null, 2));
+
+    expect(response.ok(), `Medication API returned HTTP ${response.status()}: ${JSON.stringify(body)}`).toBeTruthy();
+
     const serialized = JSON.stringify(body);
 
     expect(serialized.length).toBeGreaterThan(100);
