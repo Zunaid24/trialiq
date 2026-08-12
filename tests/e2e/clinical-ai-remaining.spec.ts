@@ -58,15 +58,24 @@ test.describe("TrialIQ live clinical AI QA — remaining modules", () => {
       console.log(`${item.name} API STATUS:`, response.status());
       console.log(`${item.name} API RESPONSE:`, JSON.stringify(body, null, 2));
 
-      expect(
-        response.ok(),
-        `${item.name} API returned HTTP ${response.status()}: ${JSON.stringify(body)}`
-      ).toBeTruthy();
+      expect(response.ok(), `${item.name} API returned HTTP ${response.status()}: ${JSON.stringify(body)}`).toBeTruthy();
 
       const serialized = JSON.stringify(body);
-
       expect(serialized.length).toBeGreaterThan(100);
       expect(serialized).toMatch(item.content);
+
+      if (item.name === "Safety Signals") {
+        // One participant must be described as an observed pattern, not a population-level signal.
+        expect(serialized).toContain("Pattern Observed");
+        expect(serialized).toContain("single-participant observation");
+      }
+
+      if (item.name === "Medical Coding") {
+        // Unsupported diagnostic alternatives must not leak into coding suggestions.
+        expect(serialized).not.toMatch(/\"alternativeSuggestions\"\s*:\s*\[\s*\"Migraine\"/i);
+        expect(serialized).toContain("humanReviewRequired");
+      }
+
       await expect(page.locator("body")).not.toContainText(/application error|internal server error/i);
     });
   }
