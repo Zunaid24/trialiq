@@ -111,7 +111,7 @@ export default function ModuleGrid() {
   return (
     <section
       id="modules"
-      className="bg-slate-50 px-5 py-20 md:px-8"
+      className="bg-slate-50 px-5 py-14 md:px-8"
     >
       <div className="mx-auto max-w-[1180px]">
 
