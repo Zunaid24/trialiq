@@ -5,10 +5,10 @@ import { ArrowRight } from "lucide-react";
 
 export default function CTA() {
   return (
-    <section className="bg-slate-50 px-5 pb-20 md:px-8">
+    <section className="bg-slate-50 px-5 pb-14 md:px-8">
       <div className="mx-auto max-w-[1180px]">
 
-        <div className="flex flex-col justify-between gap-8 rounded-2xl bg-slate-950 px-7 py-12 text-white md:flex-row md:items-center md:px-12">
+        <div className="flex flex-col justify-between gap-6 rounded-2xl bg-slate-950 px-7 py-12 text-white md:flex-row md:items-center md:px-12">
 
           <div>
 
