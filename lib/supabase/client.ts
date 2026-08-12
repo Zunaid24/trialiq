@@ -1,6 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+let browserClient: SupabaseClient | null = null;
 
 /**
  * Keep one browser Supabase client for the lifetime of the tab.
@@ -10,7 +11,7 @@ let browserClient: ReturnType<typeof createBrowserClient> | null = null;
  * call createClient(). Supabase's browser client keeps session persistence
  * and automatic token refresh enabled by default.
  */
-export function createClient() {
+export function createClient(): SupabaseClient {
   if (browserClient) return browserClient;
 
   browserClient = createBrowserClient(
