@@ -1,13 +1,17 @@
 const modules = [
   "Eligibility Screening",
   "Protocol Intelligence",
-  "Patient Matching",
+  "Clinical Data Reconciliation",
   "Source Review",
   "Visit Assistant",
   "Protocol Deviations",
   "Adverse Events",
   "Lab Intelligence",
   "Trial Analytics",
+  "Medication Review",
+  "Protocol Deviation Detection",
+  "Safety Signal Detection",
+  "Coordinator Action Center",
 ];
 
 export default function ModuleGrid() {

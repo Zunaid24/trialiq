@@ -25,15 +25,15 @@ const modules = [
       "Summarize long protocols into actionable insights.",
     href: "/dashboard/workspace/protocol",
     icon: FileSearch,
-    status: "BETA",
+    status: "LIVE",
   },
   {
-    title: "Patient Matching",
+    title: "Clinical Data Reconciliation",
     description:
       "Find the best clinical trials for a patient.",
-    href: "/dashboard/workspace/patient-matching",
+    href: "/dashboard/workspace/reconciliation",
     icon: Users,
-    status: "BETA",
+    status: "LIVE",
   },
   {
     title: "Source Review",
@@ -41,7 +41,7 @@ const modules = [
       "Extract structured clinical information from PDFs.",
     href: "/dashboard/workspace/source-review",
     icon: FileText,
-    status: "BETA",
+    status: "LIVE",
   },
   {
     title: "Visit Assistant",
@@ -49,7 +49,7 @@ const modules = [
       "Generate visit schedules and AI checklists.",
     href: "/dashboard/workspace/visit-assistant",
     icon: CalendarCheck,
-    status: "BETA",
+    status: "LIVE",
   },
   {
     title: "Protocol Deviations",
@@ -57,7 +57,7 @@ const modules = [
       "Automatically detect protocol violations.",
     href: "/dashboard/workspace/deviations",
     icon: ShieldAlert,
-    status: "BETA",
+    status: "LIVE",
   },
   {
     title: "Adverse Events",
@@ -65,7 +65,7 @@ const modules = [
       "Review and classify adverse events.",
     href: "/dashboard/workspace/adverse-events",
     icon: TriangleAlert,
-    status: "BETA",
+    status: "LIVE",
   },
   {
     title: "Lab Intelligence",
@@ -73,7 +73,7 @@ const modules = [
       "Interpret laboratory values using protocol context.",
     href: "/dashboard/workspace/lab-intelligence",
     icon: FlaskConical,
-    status: "BETA",
+    status: "LIVE",
   },
 ];
 
