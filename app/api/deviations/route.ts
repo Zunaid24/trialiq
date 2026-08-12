@@ -2,6 +2,34 @@ import { NextResponse } from "next/server";
 import { analyzeProtocolDeviation } from "@/lib/gemini";
 import { addClinicalAuditMetadata } from "@/lib/clinicalAudit";
 
+function isJsonParseError(error: any) {
+  const message = String(error?.message ?? error ?? "");
+  return /expected .* after property value in json|unexpected end of json input|unexpected token/i.test(message);
+}
+
+async function analyzeWithJsonRetry(protocol: string, participantRecord: string) {
+  let lastError: any;
+
+  // Gemini can occasionally return malformed JSON despite responseMimeType:
+  // application/json. Retry the same evidence-bound analysis a few times
+  // rather than turning a transient generation defect into an HTTP 500.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await analyzeProtocolDeviation(protocol, participantRecord);
+    } catch (error: any) {
+      lastError = error;
+
+      if (!isJsonParseError(error) || attempt === 3) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+    }
+  }
+
+  throw lastError ?? new Error("Protocol deviation analysis failed.");
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -17,7 +45,7 @@ export async function POST(req: Request) {
     }
 
     const result = addClinicalAuditMetadata(
-      await analyzeProtocolDeviation(protocol, participantRecord),
+      await analyzeWithJsonRetry(protocol, participantRecord),
       "Protocol Deviation Detection"
     );
 
