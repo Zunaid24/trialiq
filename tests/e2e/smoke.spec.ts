@@ -6,7 +6,11 @@ test.describe("TrialIQ public smoke", () => {
   test("landing page loads with primary navigation", async ({ page }) => {
     await page.goto(baseURL);
     await expect(page).toHaveTitle(/TrialIQ/i);
-    await expect(page.getByRole("link", { name: /launch workspace/i })).toBeVisible();
+
+    // The landing page intentionally contains multiple Launch Workspace CTAs.
+    // Scope the assertion to the header so the smoke test verifies primary navigation
+    // rather than failing on Playwright strict-mode ambiguity.
+    await expect(page.locator("header").getByRole("link", { name: /launch workspace/i })).toBeVisible();
   });
 
   test("auth page loads", async ({ page }) => {
