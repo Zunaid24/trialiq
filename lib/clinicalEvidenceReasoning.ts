@@ -39,7 +39,7 @@ export function deriveDeterministicProtocolChecks(pack: EvidencePack): ProtocolC
   const protocol = sources.find((source) => /protocol/i.test(source.type || source.id));
   if (!protocol?.facts?.length) return [];
 
-  return criteria.flatMap((criterion) => {
+  return criteria.flatMap((criterion): ProtocolCheck[] => {
     const protocolFact = protocol.facts?.find((fact) => new RegExp(`${criterion.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+screening threshold`, "i").test(fact));
     const threshold = protocolFact ? thresholdFor(protocolFact) : null;
     if (!protocolFact || !threshold) return [];
