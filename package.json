@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:smoke": "playwright test tests/e2e/smoke.spec.ts --project=chromium",
+    "test:ai": "node scripts/run-ai-quality.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
