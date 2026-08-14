@@ -25,12 +25,14 @@ async function main() {
   function errorMessage(error: unknown) {
     if (error instanceof Error) return error.stack || error.message;
     if (typeof error === "string") return error;
-    try {
-      const serialized = JSON.stringify(error);
-      return serialized === undefined ? String(error) : serialized;
-    } catch {
-      return String(error);
-    }
+    try { const serialized = JSON.stringify(error); return serialized === undefined ? String(error) : serialized; } catch { return String(error); }
+  }
+
+  function normalizeConfidence(value: unknown) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return null;
+    const percentage = numeric >= 0 && numeric <= 1 ? numeric * 100 : numeric;
+    return Math.max(0, Math.min(100, Math.round(percentage)));
   }
 
   async function runPlaywright(spec: string, env: NodeJS.ProcessEnv) {
@@ -41,13 +43,7 @@ async function main() {
       const args = process.platform === "win32"
         ? ["/d", "/s", "/c", "npx playwright test " + spec + " --project=chromium"]
         : ["playwright", "test", spec, "--project=chromium"];
-      const child = spawn(command, args, {
-        cwd: process.cwd(),
-        env,
-        windowsHide: true,
-        shell: false,
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+      const child = spawn(command, args, { cwd: process.cwd(), env, windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"] });
       let stdout = "";
       let stderr = "";
       let settled = false;
@@ -145,18 +141,15 @@ async function main() {
         if (testError) throw testError;
         const testResultId = new Map((insertedTests || []).map((row) => [row.test_number, row.id]));
         const reviews = Array.isArray(aiReview?.reviews) ? aiReview.reviews : [];
-        const reviewRows = reviews.map((review: any) => ({ run_id: run.id, test_result_id: testResultId.get(Number(review.testId)) || null, test_number: Number(review.testId), score: review.score ?? null, verdict: review.verdict ?? null, root_cause_layer: review.rootCauseLayer ?? null, root_cause_confidence: review.rootCauseConfidence ?? null, is_product_defect: review.isProductDefect ?? false, strengths: review.strengths || [], issues: review.issues || [], recommendations: review.recommendations || [], review_notes: review.reviewNotes || null, raw_review: review }));
+        const reviewRows = reviews.map((review: any) => ({ run_id: run.id, test_result_id: testResultId.get(Number(review.testId)) || null, test_number: Number(review.testId), score: review.score ?? null, verdict: review.verdict ?? null, root_cause_layer: review.rootCauseLayer ?? null, root_cause_confidence: normalizeConfidence(review.rootCauseConfidence), is_product_defect: review.isProductDefect ?? false, strengths: review.strengths || [], issues: review.issues || [], recommendations: review.recommendations || [], review_notes: review.reviewNotes || null, raw_review: review }));
         if (reviewRows.length) { const { error: reviewError } = await store.from("test_ai_reviews").insert(reviewRows); if (reviewError) throw reviewError; }
       }
       await store.from("test_run_jobs").update({ status: "COMPLETED", completed_at: completed.toISOString(), run_id: run.id, error: null }).eq("id", job.id);
       console.log(`[TrialIQ] ${suiteName}: ${runStatus} (${passed}/${total}) · run ${run.id}`);
     } catch (error) {
       const message = errorMessage(error);
-      try {
-        await store.from("test_run_jobs").update({ status: "FAILED", completed_at: new Date().toISOString(), error: message }).eq("id", job.id);
-      } catch (updateError) {
-        console.error(`[TrialIQ] Failed to persist job failure: ${errorMessage(updateError)}`);
-      }
+      try { await store.from("test_run_jobs").update({ status: "FAILED", completed_at: new Date().toISOString(), error: message }).eq("id", job.id); }
+      catch (updateError) { console.error(`[TrialIQ] Failed to persist job failure: ${errorMessage(updateError)}`); }
       console.error(`[TrialIQ] Job ${job.id} failed: ${message}`);
     } finally {
       await fs.rm(jobDir, { recursive: true, force: true }).catch(() => undefined);
@@ -171,19 +164,11 @@ async function main() {
     try {
       const { data: job, error } = await store.rpc("claim_test_run_job", { p_runner_id: runnerId });
       if (error) throw error;
-      if (job?.id) {
-        await processJob(job);
-      } else if (job && Object.values(job).some((value) => value !== null)) {
-        console.warn("[TrialIQ] Ignoring malformed job returned by claim_test_run_job:", JSON.stringify(job));
-      }
-    } catch (error) {
-      console.error("[TrialIQ] Polling error:", errorMessage(error));
-    }
+      if (job?.id) await processJob(job);
+      else if (job && Object.values(job).some((value) => value !== null)) console.warn("[TrialIQ] Ignoring malformed job returned by claim_test_run_job:", JSON.stringify(job));
+    } catch (error) { console.error("[TrialIQ] Polling error:", errorMessage(error)); }
     await sleep(pollMs);
   }
 }
 
-main().catch((error) => {
-  console.error("[TrialIQ] Fatal runner error:", errorMessage(error));
-  process.exitCode = 1;
-});
+main().catch((error) => { console.error("[TrialIQ] Fatal runner error:", errorMessage(error)); process.exitCode = 1; });
