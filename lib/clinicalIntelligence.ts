@@ -28,6 +28,12 @@ NON-NEGOTIABLE RULES:
 - A missing assessment must remain Pending/Review Required, not negative.
 - Recommendations must be operational and specific.
 
+POPULATION INFERENCE GUARDRAIL:
+- Treat participant-level evidence as participant-level evidence unless supplied sources explicitly contain population-level data.
+- When the evidence is limited to a single participant, you MUST explicitly state that population-level inference is not supported.
+- In the output, populate populationInference with supported=false, scope="Single Participant", and a concise rationale that uses the phrase "does not support population-level inference".
+- Never imply that a single participant establishes, confirms, or demonstrates a population incidence, rate, or safety signal.
+
 DECISION VALUE:
 - Prioritize findings that can change enrollment/eligibility, participant safety review, protocol compliance, data integrity, coding quality or coordinator workload.
 - Explain WHY the finding changes the next decision.
@@ -75,6 +81,34 @@ function parseJson(text: string) {
   }
 }
 
+function enforcePopulationInferenceGuardrail(result: any) {
+  const participantId = typeof result?.participantId === "string" ? result.participantId.trim() : "";
+  const existing = result?.populationInference;
+
+  if (existing && typeof existing === "object") {
+    existing.supported = existing.supported === true && !participantId;
+    if (!existing.scope) existing.scope = participantId ? "Single Participant" : "Unknown";
+    if (!existing.rationale || participantId) {
+      existing.rationale = participantId
+        ? "The available evidence is participant-level and does not support population-level inference."
+        : existing.rationale || "Population-level inference requires explicit population-level source evidence.";
+    }
+    return;
+  }
+
+  result.populationInference = participantId
+    ? {
+        supported: false,
+        scope: "Single Participant",
+        rationale: "The available evidence is participant-level and does not support population-level inference.",
+      }
+    : {
+        supported: false,
+        scope: "Unknown",
+        rationale: "Population-level inference requires explicit population-level source evidence.",
+      };
+}
+
 export async function analyzeClinicalIntelligence(evidencePack: unknown) {
   const prompt = `
 Build an executive Clinical Intelligence assessment for the supplied study evidence.
@@ -86,6 +120,7 @@ Return exactly this shape:
   "executiveDecision":"",
   "decisionReadiness":"Decision-Ready | Review Required | Not Decision-Ready",
   "executiveSummary":"",
+  "populationInference":{"supported":false,"scope":"Single Participant | Population | Unknown","rationale":""},
   "priorityFindings":[
     {
       "priority":"Critical | High | Moderate",
@@ -125,6 +160,7 @@ QUALITY BAR:
 - Explicitly identify contradictions and what evidence resolves them.
 - If prior measurements are supplied, distinguish new change from known finding and quantify direction/magnitude when possible.
 - Every recommendation must be actionable for a reviewer or coordinator.
+- If participantId identifies a single participant, populationInference.supported MUST be false and populationInference.rationale MUST explicitly say that the evidence does not support population-level inference.
 
 EVIDENCE PACK:\n${JSON.stringify(evidencePack, null, 2)}`;
 
@@ -133,7 +169,11 @@ EVIDENCE PACK:\n${JSON.stringify(evidencePack, null, 2)}`;
     try {
       const response = await ai.models.generateContent({ model, contents: `${SYSTEM}\n${prompt}`, config: { responseMimeType: "application/json", temperature: 0.1 } });
       const result = parseJson(response.text ?? "");
-      if (result && typeof result === "object") { result.aiModel = model; result.aiFallbackUsed = model !== MODELS[0]; }
+      if (result && typeof result === "object") {
+        enforcePopulationInferenceGuardrail(result);
+        result.aiModel = model;
+        result.aiFallbackUsed = model !== MODELS[0];
+      }
       return result;
     } catch (error) { lastError = error; }
   }
