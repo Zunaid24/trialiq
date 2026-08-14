@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import fs from "node:fs/promises";
 
 type Intelligence = any;
 let result: Intelligence;
@@ -37,6 +38,11 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       const payload = await response.json();
       expect(payload.success).toBeTruthy();
       result = payload.result;
+
+      const resultFile = process.env.PLAYWRIGHT_RESULT_FILE;
+      if (resultFile) {
+        await fs.writeFile(resultFile, JSON.stringify(result, null, 2), "utf8");
+      }
 
       await expect(page.getByRole("heading", { name: /priority findings/i })).toBeVisible({ timeout: 15_000 });
     } finally {
@@ -79,9 +85,6 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       return /undocumented|not documented|missing.*(dose|route|washout|eligibility)/.test(text);
     });
 
-    // Scope the assertion to the finding that actually contains the missing
-    // evidence. Other findings may legitimately report "not met" protocol
-    // thresholds and must not create a false failure through JSON adjacency.
     expect(undocumentedFindings.length).toBeGreaterThan(0);
     undocumentedFindings.forEach((finding: any) => {
       const text = JSON.stringify(finding).toLowerCase();
