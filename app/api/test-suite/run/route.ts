@@ -1,85 +1,162 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { evaluateAiQuality } from "@/lib/ai-quality-benchmark";
+import { spawn } from "node:child_process";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 function runId(date: Date) {
-  return date.toISOString().replace("T", "_").replace(/:/g, "-").replace(/\.\d{3}Z$/, "Z");
+  return date
+    .toISOString()
+    .replace("T", "_")
+    .replace(/:/g, "-")
+    .replace(/\.\d{3}Z$/, "Z");
+}
+
+function npxCommand() {
+  return process.platform === "win32" ? "npx.cmd" : "npx";
+}
+
+function flattenPlaywrightTests(value: any, output: any[] = []) {
+  if (!value) return output;
+
+  for (const spec of value.specs || []) {
+    for (const test of spec.tests || []) {
+      const results = test.results || [];
+      const last = results[results.length - 1];
+      const status = last?.status || test.status;
+      const error = last?.error?.message || last?.errors?.[0]?.message;
+      output.push({
+        id: Number(String(spec.title).match(/^([0-9]+)/)?.[1] || output.length + 1),
+        name: spec.title,
+        passed: status === "passed",
+        durationMs: Number(last?.duration || 0),
+        error,
+      });
+    }
+  }
+
+  for (const suite of value.suites || []) flattenPlaywrightTests(suite, output);
+  return output;
+}
+
+async function runPlaywright(args: string[], env: NodeJS.ProcessEnv) {
+  return await new Promise<{ code: number; stdout: string; stderr: string }>((resolve, reject) => {
+    const child = spawn(npxCommand(), args, {
+      cwd: process.cwd(),
+      env,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (code) => resolve({ code: code ?? 1, stdout, stderr }));
+  });
 }
 
 export async function POST(request: NextRequest) {
   const started = new Date();
   const id = runId(started);
-  const cookie = request.headers.get("cookie") || "";
-  const baseUrl = request.nextUrl.origin;
   const dir = path.join(process.cwd(), "test-reports", "web-runs");
-  const file = path.join(dir, `${id}.json`);
+  const reportFile = path.join(dir, `${id}.playwright.json`);
+  const reportPath = path.join(dir, `${id}.json`);
+  const logPath = path.join(dir, `${id}.log.txt`);
 
   try {
-    if (!cookie) {
-      return NextResponse.json({ error: "You must be signed in to run the benchmark." }, { status: 401 });
+    // This runner intentionally executes locally. A Next/Vercel serverless function
+    // is not a reliable place to launch and retain a Playwright browser process.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("The local Playwright test runner is disabled in production. Run the TrialIQ app locally.");
+    }
+
+    if (!process.env.PLAYWRIGHT_EMAIL || !process.env.PLAYWRIGHT_PASSWORD) {
+      throw new Error(
+        "PLAYWRIGHT_EMAIL and PLAYWRIGHT_PASSWORD must be configured once in .env.local. The web test page never asks for them."
+      );
     }
 
     await fs.mkdir(dir, { recursive: true });
-    const sourceResponse = await fetch(`${baseUrl}/demo/clinical-intelligence-evidence.json`, { cache: "no-store" });
-    if (!sourceResponse.ok) throw new Error(`Evidence pack request failed with HTTP ${sourceResponse.status}`);
-    const evidencePack = await sourceResponse.json();
 
-    const aiResponse = await fetch(`${baseUrl}/api/clinical-intelligence`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie },
-      body: JSON.stringify({ evidencePack }),
-      cache: "no-store",
-    });
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      PLAYWRIGHT_BASE_URL: process.env.PLAYWRIGHT_BASE_URL || request.nextUrl.origin,
+      PLAYWRIGHT_HEADLESS: "true",
+      PLAYWRIGHT_REPORT_FILE: reportFile,
+    };
 
-    const payload = await aiResponse.json().catch(() => null);
-    if (!aiResponse.ok || !payload?.success) {
-      throw new Error(payload?.message || `Clinical Intelligence API failed with HTTP ${aiResponse.status}`);
+    const result = await runPlaywright(
+      [
+        "playwright",
+        "test",
+        "tests/e2e/ai-quality-benchmark.spec.ts",
+        "--project=chromium",
+      ],
+      env
+    );
+
+    const completed = new Date();
+    let playwrightJson: any = null;
+    try {
+      playwrightJson = JSON.parse(await fs.readFile(reportFile, "utf8"));
+    } catch {
+      // The log below is still enough to diagnose startup/auth/configuration failures.
     }
 
-    const tests = evaluateAiQuality(payload.result);
-    const completed = new Date();
-    const passed = tests.filter((t) => t.passed).length;
-    const failed = tests.length - passed;
+    const tests = flattenPlaywrightTests(playwrightJson);
+    const total = 25;
+    const passed = tests.filter((test) => test.passed).length;
+    const failed = total - passed;
+    const error = result.code === 0
+      ? undefined
+      : tests.find((test) => !test.passed)?.error || result.stderr.trim() || `Playwright exited with code ${result.code}`;
+
     const report = {
       id,
       startedAt: started.toISOString(),
       completedAt: completed.toISOString(),
       durationMs: completed.getTime() - started.getTime(),
-      status: failed === 0 ? "PASS" : "FAIL",
-      total: tests.length,
+      status: result.code === 0 && passed === total ? "PASS" : "FAIL",
+      total,
       passed,
       failed,
-      result: payload.result,
+      result: null,
       tests,
+      error,
+      stdout: result.stdout,
+      stderr: result.stderr,
     };
 
-    await fs.writeFile(file, JSON.stringify(report, null, 2), "utf8");
+    await fs.writeFile(logPath, `${result.stdout}\n${result.stderr}`, "utf8");
+    await fs.writeFile(reportPath, JSON.stringify(report, null, 2), "utf8");
     return NextResponse.json({ ok: true, report });
   } catch (error) {
     const completed = new Date();
+    const message = error instanceof Error ? error.message : String(error);
     const report = {
       id,
       startedAt: started.toISOString(),
       completedAt: completed.toISOString(),
       durationMs: completed.getTime() - started.getTime(),
       status: "FAIL",
-      total: 0,
+      total: 25,
       passed: 0,
-      failed: 0,
+      failed: 25,
       result: null,
       tests: [],
-      error: error instanceof Error ? error.message : String(error),
+      error: message,
     };
-    try {
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(file, JSON.stringify(report, null, 2), "utf8");
-    } catch {}
-    const status = report.error.includes("signed in") ? 401 : 500;
-    return NextResponse.json({ ok: false, report }, { status });
+    await fs.mkdir(dir, { recursive: true }).catch(() => undefined);
+    await fs.writeFile(reportPath, JSON.stringify(report, null, 2), "utf8").catch(() => undefined);
+    return NextResponse.json({ ok: false, report }, { status: 500 });
   }
 }
