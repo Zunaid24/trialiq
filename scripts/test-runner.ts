@@ -5,7 +5,6 @@ import { spawn } from "node:child_process";
 import dotenv from "dotenv";
 import { getTestRunnerStore, getTestRunnerConfig } from "../lib/testRunStore";
 
-// Load the local runner environment explicitly. Do not rely on tsx/Node's implicit env loading.
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: false });
 
@@ -19,17 +18,19 @@ async function main() {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  function npxCommand() {
-    return process.platform === "win32" ? "npx.cmd" : "npx";
-  }
-
   function runId() {
     return new Date().toISOString().replace("T", "_").replace(/:/g, "-").replace(/\.\d{3}Z$/, "Z");
   }
 
   async function runPlaywright(spec: string, env: NodeJS.ProcessEnv) {
     return new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
-      const child = spawn(npxCommand(), ["playwright", "test", spec, "--project=chromium"], {
+      // On Windows, .cmd shims such as npx.cmd cannot be spawned reliably with shell:false.
+      // Invoke cmd.exe explicitly so the child process is still controlled without Node's shell:true.
+      const command = process.platform === "win32" ? (process.env.ComSpec || "cmd.exe") : "npx";
+      const args = process.platform === "win32"
+        ? ["/d", "/s", "/c", "npx playwright test " + spec + " --project=chromium"]
+        : ["playwright", "test", spec, "--project=chromium"];
+      const child = spawn(command, args, {
         cwd: process.cwd(),
         env,
         windowsHide: true,
