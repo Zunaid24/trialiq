@@ -157,7 +157,7 @@ async function main() {
       if (error) throw error;
       if (job?.id) {
         await processJob(job);
-      } else if (job) {
+      } else if (job && Object.values(job).some((value) => value !== null)) {
         console.warn("[TrialIQ] Ignoring malformed job returned by claim_test_run_job:", JSON.stringify(job));
       }
     } catch (error) {
