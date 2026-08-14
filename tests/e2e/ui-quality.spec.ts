@@ -1,4 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const email = process.env.PLAYWRIGHT_EMAIL;
 const password = process.env.PLAYWRIGHT_PASSWORD;
@@ -118,6 +120,45 @@ async function mockClinicalIntelligence(page: Page) {
   });
 }
 
+async function captureUiEvidence(page: Page, testInfo: Parameters<Parameters<typeof test.afterEach>[0]>[0]) {
+  const root = process.env.PLAYWRIGHT_EVIDENCE_DIR;
+  if (!root) return;
+
+  const match = testInfo.title.match(/^(\d+)/);
+  const id = Number(match?.[1] || 0);
+  if (!id) return;
+
+  const screenshotPath = path.join(root, `${String(id).padStart(2, "0")}.png`);
+  const evidencePath = path.join(root, `${String(id).padStart(2, "0")}.json`);
+  await fs.mkdir(root, { recursive: true });
+
+  try {
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+  } catch {}
+
+  let visibleText = "";
+  try { visibleText = (await page.locator("body").innerText()).slice(0, 30000); } catch {}
+
+  let controls: string[] = [];
+  try {
+    controls = await page.locator("button,a,input,select,textarea").evaluateAll((nodes) => nodes.slice(0, 200).map((node) => {
+      const element = node as HTMLElement;
+      const input = node as HTMLInputElement;
+      return `${node.tagName.toLowerCase()} | text=${(element.innerText || "").trim().slice(0, 120)} | aria=${node.getAttribute("aria-label") || ""} | name=${input.name || ""} | type=${input.type || ""}`;
+    }));
+  } catch {}
+
+  await fs.writeFile(evidencePath, JSON.stringify({
+    testId: id,
+    testName: testInfo.title,
+    url: page.url(),
+    visibleText,
+    controls,
+    screenshotPath,
+    capturedAt: new Date().toISOString(),
+  }, null, 2), "utf8");
+}
+
 test.describe("TrialIQ UI quality — public", () => {
   test("01 — landing page exposes the primary workspace CTA", async ({ page }) => {
     await page.goto("/");
@@ -149,6 +190,10 @@ test.describe("TrialIQ UI quality — authenticated navigation", () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page);
     await mockClinicalIntelligence(page);
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    await captureUiEvidence(page, testInfo);
   });
 
   test("04 — dashboard renders the core application navigation", async ({ page }) => {
