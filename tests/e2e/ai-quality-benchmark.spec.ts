@@ -21,7 +21,10 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       await page.getByLabel(/email/i).fill(email!);
       await page.getByLabel(/password/i).fill(password!);
       await page.getByRole("button", { name: /sign in/i }).click();
-      await page.waitForURL(/\/dashboard\//, { timeout: 15_000 });
+
+      // The app lands on /dashboard (without a trailing slash). Match both the
+      // dashboard root and nested dashboard routes.
+      await page.waitForURL(/\/dashboard(?:\/|$)/, { timeout: 15_000 });
 
       const responsePromise = page.waitForResponse(
         (response) =>
