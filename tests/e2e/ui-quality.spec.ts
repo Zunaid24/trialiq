@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type TestInfo } from "@playwright/test";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -120,7 +120,7 @@ async function mockClinicalIntelligence(page: Page) {
   });
 }
 
-async function captureUiEvidence(page: Page, testInfo: Parameters<Parameters<typeof test.afterEach>[0]>[0]) {
+async function captureUiEvidence(page: Page, testInfo: TestInfo) {
   const root = process.env.PLAYWRIGHT_EVIDENCE_DIR;
   if (!root) return;
 
@@ -128,12 +128,12 @@ async function captureUiEvidence(page: Page, testInfo: Parameters<Parameters<typ
   const id = Number(match?.[1] || 0);
   if (!id) return;
 
-  const screenshotPath = path.join(root, `${String(id).padStart(2, "0")}.png`);
+  const screenshotPath = path.join(root, `${String(id).padStart(2, "0")}.jpg`);
   const evidencePath = path.join(root, `${String(id).padStart(2, "0")}.json`);
   await fs.mkdir(root, { recursive: true });
 
   try {
-    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await page.screenshot({ path: screenshotPath, type: "jpeg", quality: 68, fullPage: true });
   } catch {}
 
   let visibleText = "";
@@ -160,6 +160,8 @@ async function captureUiEvidence(page: Page, testInfo: Parameters<Parameters<typ
 }
 
 test.describe("TrialIQ UI quality — public", () => {
+  test.afterEach(async ({ page }, testInfo) => { await captureUiEvidence(page, testInfo); });
+
   test("01 — landing page exposes the primary workspace CTA", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/TrialIQ/i);
@@ -192,9 +194,7 @@ test.describe("TrialIQ UI quality — authenticated navigation", () => {
     await mockClinicalIntelligence(page);
   });
 
-  test.afterEach(async ({ page }, testInfo) => {
-    await captureUiEvidence(page, testInfo);
-  });
+  test.afterEach(async ({ page }, testInfo) => { await captureUiEvidence(page, testInfo); });
 
   test("04 — dashboard renders the core application navigation", async ({ page }) => {
     await expect(page.getByText(/TrialIQ AI/i).first()).toBeVisible();
