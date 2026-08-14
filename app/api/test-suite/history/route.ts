@@ -1,39 +1,49 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
+import { getTestRunStore } from "@/lib/testRunStore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const dir = path.join(process.cwd(), "test-reports", "web-runs");
   try {
-    const names = await fs.readdir(dir);
-    const reportNames = names.filter((name) => name.endsWith(".json") && !name.endsWith(".playwright.json") && !name.endsWith(".result.json"));
-    const reports = [];
-    for (const name of reportNames) {
-      try {
-        const report = JSON.parse(await fs.readFile(path.join(dir, name), "utf8"));
-        if (!report.id || !report.startedAt) continue;
-        reports.push({
-          id: report.id,
-          suite: report.suite,
-          suiteKey: report.suiteKey,
-          startedAt: report.startedAt,
-          completedAt: report.completedAt,
-          durationMs: report.durationMs,
-          status: report.status,
-          total: report.total,
-          passed: report.passed,
-          failed: report.failed,
-          aiReview: report.aiReview ? { status: report.aiReview.status, overallScore: report.aiReview.overallScore ?? null, model: report.aiReview.model } : undefined,
-          error: report.error,
-        });
-      } catch {}
-    }
-    reports.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+    const store = getTestRunStore();
+    const { data, error } = await store
+      .from("test_runs")
+      .select("id,run_key,suite,suite_key,started_at,completed_at,duration_ms,status,total,passed,failed,skipped,flaky,ai_review,error")
+      .order("started_at", { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    const reports = (data || []).map((run) => ({
+      id: run.id,
+      runKey: run.run_key,
+      suite: run.suite,
+      suiteKey: run.suite_key,
+      startedAt: run.started_at,
+      completedAt: run.completed_at,
+      durationMs: run.duration_ms,
+      status: run.status,
+      total: run.total,
+      passed: run.passed,
+      failed: run.failed,
+      skipped: run.skipped,
+      flaky: run.flaky,
+      aiReview: run.ai_review
+        ? {
+            status: run.ai_review.status,
+            overallScore: run.ai_review.overallScore ?? null,
+            model: run.ai_review.model,
+          }
+        : undefined,
+      error: run.error,
+    }));
+
     return NextResponse.json({ reports });
-  } catch {
-    return NextResponse.json({ reports: [] });
+  } catch (error) {
+    return NextResponse.json(
+      { reports: [], error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }
