@@ -43,10 +43,15 @@ export default function TestSuitePage() {
     try {
       const response = await fetch("/api/test-suite/run", { method: "POST" });
       const payload = await response.json();
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload?.report?.error || payload?.error || "Unable to start benchmark.");
+
+      // A benchmark failure is still a valid run. Always open its timestamped
+      // result page so the user can inspect the failure and logs.
+      if (payload?.report?.id) {
+        window.location.href = `/test.html/run/${payload.report.id}`;
+        return;
       }
-      window.location.href = `/test.html/run/${payload.report.id}`;
+
+      throw new Error(payload?.error || "Unable to start benchmark.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to start benchmark.");
       await loadHistory();
@@ -73,8 +78,8 @@ export default function TestSuitePage() {
           </button>
         </header>
 
-        {running && <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5"><div className="flex items-center gap-3"><Loader2 className="animate-spin text-blue-700" size={19}/><div><p className="font-bold text-blue-950">Benchmark running</p><p className="mt-1 text-sm text-blue-800">Clinical Intelligence is being evaluated across all 25 gates. This can take up to a couple of minutes.</p></div></div></div>}
-        {error && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><strong>Could not run the benchmark.</strong> {error} <Link className="ml-2 font-bold underline" href="/auth">Sign in</Link></div>}
+        {running && <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5"><div className="flex items-center gap-3"><Loader2 className="animate-spin text-blue-700" size={19}/><div><p className="font-bold text-blue-950">Benchmark running</p><p className="mt-1 text-sm text-blue-800">Clinical Intelligence is being evaluated across all 25 gates. The browser runs headlessly; no Chrome window will open.</p></div></div></div>}
+        {error && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><strong>Could not start the benchmark.</strong> {error}</div>}
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <Stat icon={<Activity size={17}/>} label="Latest result" value={latest ? `${latest.passed}/${latest.total}` : "—"} detail={latest ? latest.status : "No runs yet"} />
@@ -94,7 +99,7 @@ export default function TestSuitePage() {
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6"><h2 className="font-bold">What this measures</h2><div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-2"><p>Decision readiness, confidence and executive conclusion quality.</p><p>Evidence grounding, source traceability and missing evidence.</p><p>Protocol impact, safety reasoning and cross-document relationships.</p><p>Operational recommendations, auditability and model provenance.</p></div></section>
 
-        <p className="mt-8 text-xs leading-5 text-slate-400">Runs use the signed-in TrialIQ session and the same demo evidence pack as the Clinical Intelligence workspace. No Playwright credentials are entered on this page.</p>
+        <p className="mt-8 text-xs leading-5 text-slate-400">Runs use the signed-in TrialIQ session and the same demo evidence pack as the Clinical Intelligence workspace. Credentials stay in local environment configuration and are never entered on this page.</p>
       </div>
     </main>
   );
