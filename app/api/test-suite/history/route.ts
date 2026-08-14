@@ -9,10 +9,14 @@ export async function GET() {
   const dir = path.join(process.cwd(), "test-reports", "web-runs");
   try {
     const names = await fs.readdir(dir);
+    const reportNames = names.filter(
+      (name) => name.endsWith(".json") && !name.endsWith(".playwright.json") && !name.endsWith(".result.json")
+    );
     const reports = [];
-    for (const name of names.filter((n) => n.endsWith(".json"))) {
+    for (const name of reportNames) {
       try {
         const report = JSON.parse(await fs.readFile(path.join(dir, name), "utf8"));
+        if (!report.id || !report.startedAt) continue;
         reports.push({
           id: report.id,
           startedAt: report.startedAt,
