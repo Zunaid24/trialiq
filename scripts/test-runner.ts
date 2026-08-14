@@ -30,7 +30,11 @@ async function main() {
   async function runPlaywright(spec: string, env: NodeJS.ProcessEnv) {
     return new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
       const child = spawn(npxCommand(), ["playwright", "test", spec, "--project=chromium"], {
-        cwd: process.cwd(), env, windowsHide: true, shell: process.platform === "win32", stdio: ["ignore", "pipe", "pipe"],
+        cwd: process.cwd(),
+        env,
+        windowsHide: true,
+        shell: false,
+        stdio: ["ignore", "pipe", "pipe"],
       });
       let stdout = "";
       let stderr = "";
@@ -151,7 +155,11 @@ async function main() {
     try {
       const { data: job, error } = await store.rpc("claim_test_run_job", { p_runner_id: runnerId });
       if (error) throw error;
-      if (job) await processJob(job);
+      if (job?.id) {
+        await processJob(job);
+      } else if (job) {
+        console.warn("[TrialIQ] Ignoring malformed job returned by claim_test_run_job:", JSON.stringify(job));
+      }
     } catch (error) {
       console.error("[TrialIQ] Polling error:", error instanceof Error ? error.message : String(error));
     }
