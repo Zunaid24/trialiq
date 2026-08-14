@@ -1,4 +1,4 @@
-import { test, expect, request as playwrightRequest } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 type Intelligence = any;
 let result: Intelligence;
@@ -21,7 +21,7 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       await page.getByLabel(/email/i).fill(email!);
       await page.getByLabel(/password/i).fill(password!);
       await page.getByRole("button", { name: /sign in/i }).click();
-      await page.waitForURL(/\/dashboard\/, { timeout: 15_000 });
+      await page.waitForURL(/\/dashboard\//, { timeout: 15_000 });
 
       const responsePromise = page.waitForResponse(
         (response) =>
@@ -62,18 +62,12 @@ test.describe("TrialIQ AI output quality benchmark", () => {
 
   test("12 — single-participant evidence is not promoted to population incidence", () => {
     const text = JSON.stringify(result).toLowerCase();
-
-    expect(text).not.toMatch(
-      /population[- ]level (incidence|rate|signal) (is|was|has been) established/
-    );
+    expect(text).not.toMatch(/population[- ]level (incidence|rate|signal) (is|was|has been) established/);
     expect(text).toMatch(/single[- ]participant/);
-
     expect(result.populationInference).toBeTruthy();
     expect(result.populationInference.supported).toBe(false);
     expect(result.populationInference.scope).toBe("Single Participant");
-    expect(String(result.populationInference.rationale).toLowerCase()).toMatch(
-      /does not support population[- ]level inference/
-    );
+    expect(String(result.populationInference.rationale).toLowerCase()).toMatch(/does not support population[- ]level inference/);
   });
 
   test("13 — temporal association is not presented as causality", () => expect(JSON.stringify(result).toLowerCase()).not.toMatch(/proves? .*causality|confirmed .*causal relationship/));
