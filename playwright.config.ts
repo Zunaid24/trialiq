@@ -9,11 +9,19 @@ export default defineConfig({
   timeout: 180_000,
   reporter: [
     ["list"],
-    ["json", { outputFile: "test-reports/latest/results.json" }],
+    [
+      "json",
+      {
+        outputFile:
+          process.env.PLAYWRIGHT_REPORT_FILE || "test-reports/latest/results.json",
+      },
+    ],
   ],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
-    headless: false,
+    // Web test runner defaults to headless. Set PLAYWRIGHT_HEADLESS=false
+    // only when deliberately running Playwright manually with a visible browser.
+    headless: process.env.PLAYWRIGHT_HEADLESS !== "false",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
