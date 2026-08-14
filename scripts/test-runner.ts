@@ -1,11 +1,14 @@
-import "dotenv/config";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { getTestRunStore, getTestRunnerConfig } from "../lib/testRunStore";
 import { reviewQualitySuite } from "../lib/testAiReviewer";
+
+try {
+  process.loadEnvFile?.(".env.local");
+  process.loadEnvFile?.(".env");
+} catch {}
 
 const store = getTestRunStore();
 const { baseUrl, runnerId, pollMs } = getTestRunnerConfig();
@@ -82,24 +85,11 @@ async function loadUiEvidence(dir: string, tests: any[]) {
       const metadata = JSON.parse(await fs.readFile(path.join(dir, `${id}.json`), "utf8"));
       let screenshotBase64: string | undefined;
       try { screenshotBase64 = (await fs.readFile(path.join(dir, `${id}.jpg`))).toString("base64"); } catch {}
-      return {
-        ...test,
-        evidence: {
-          url: metadata.url,
-          visibleText: metadata.visibleText,
-          controls: metadata.controls,
-          screenshotBase64,
-        },
-      };
+      return { ...test, evidence: { url: metadata.url, visibleText: metadata.visibleText, controls: metadata.controls, screenshotBase64 } };
     } catch {
       return test;
     }
   }));
-}
-
-function firstLineNumber(name: string) {
-  const match = name.match(/:(\d+):\d+$/);
-  return match ? Number(match[1]) : null;
 }
 
 async function processJob(job: any) {
@@ -123,7 +113,7 @@ async function processJob(job: any) {
     PLAYWRIGHT_EVIDENCE_DIR: evidenceDir,
   };
 
-  let processResult: { code: number; stdout: string; stderr: string } = { code: 1, stdout: "", stderr: "" };
+  let processResult = { code: 1, stdout: "", stderr: "" };
   let playwrightJson: any = null;
   let suiteResult: any = null;
   let aiReview: any = null;
@@ -145,48 +135,37 @@ async function processJob(job: any) {
     try {
       aiReview = await reviewQualitySuite({ suite: suiteName, tests: evidenceTests, aiResult: suiteResult });
     } catch (error) {
-      aiReview = {
-        status: "ERROR",
-        model: process.env.TEST_REVIEW_MODEL || "gemini-3.6-flash",
-        overallScore: null,
-        overallSummary: "Automated tests completed, but the AI review layer failed.",
-        reviews: [],
-        error: error instanceof Error ? error.message : String(error),
-      };
+      aiReview = { status: "ERROR", model: process.env.TEST_REVIEW_MODEL || "gemini-3.6-flash", overallScore: null, overallSummary: "Automated tests completed, but the AI review layer failed.", reviews: [], error: error instanceof Error ? error.message : String(error) };
     }
 
     const completed = new Date();
     const runStatus = processResult.code === 0 && total > 0 && failed === 0 ? "PASS" : "FAIL";
-    const { data: run, error: runError } = await store
-      .from("test_runs")
-      .insert({
-        job_id: job.id,
-        run_key: id,
-        suite: suiteName,
-        suite_key: suiteKey,
-        started_at: started.toISOString(),
-        completed_at: completed.toISOString(),
-        duration_ms: completed.getTime() - started.getTime(),
-        status: runStatus,
-        total,
-        passed,
-        failed,
-        skipped,
-        flaky,
-        worker_count: 1,
-        browser: "chromium",
-        base_url: baseUrl,
-        git_commit: process.env.GIT_COMMIT || undefined,
-        suite_version: process.env.TEST_SUITE_VERSION || "local-runner",
-        command: `playwright test ${spec} --project=chromium`,
-        raw_console_output: logs,
-        raw_playwright_result: playwrightJson,
-        raw_suite_result: suiteResult,
-        ai_review: aiReview,
-        error: failed ? tests.find((test) => !test.passed)?.errorMessage || logs : processResult.code !== 0 ? logs : null,
-      })
-      .select("id")
-      .single();
+    const { data: run, error: runError } = await store.from("test_runs").insert({
+      job_id: job.id,
+      run_key: id,
+      suite: suiteName,
+      suite_key: suiteKey,
+      started_at: started.toISOString(),
+      completed_at: completed.toISOString(),
+      duration_ms: completed.getTime() - started.getTime(),
+      status: runStatus,
+      total,
+      passed,
+      failed,
+      skipped,
+      flaky,
+      worker_count: 1,
+      browser: "chromium",
+      base_url: baseUrl,
+      git_commit: process.env.GIT_COMMIT || undefined,
+      suite_version: process.env.TEST_SUITE_VERSION || "local-runner",
+      command: `playwright test ${spec} --project=chromium`,
+      raw_console_output: logs,
+      raw_playwright_result: playwrightJson,
+      raw_suite_result: suiteResult,
+      ai_review: aiReview,
+      error: failed ? tests.find((test) => !test.passed)?.errorMessage || logs : processResult.code !== 0 ? logs : null,
+    }).select("id").single();
 
     if (runError || !run) throw runError || new Error("Test run was not created.");
 
@@ -196,7 +175,6 @@ async function processJob(job: any) {
       test_id: test.testId,
       test_name: test.testName,
       test_file: test.testFile,
-      test_line: firstLineNumber(test.testName),
       status: test.status,
       duration_ms: test.durationMs,
       error_message: test.errorMessage || null,
@@ -206,12 +184,8 @@ async function processJob(job: any) {
     }));
 
     if (testRows.length) {
-      const { data: insertedTests, error: testError } = await store
-        .from("test_results")
-        .insert(testRows)
-        .select("id,test_number");
+      const { data: insertedTests, error: testError } = await store.from("test_results").insert(testRows).select("id,test_number");
       if (testError) throw testError;
-
       const testResultId = new Map((insertedTests || []).map((row) => [row.test_number, row.id]));
       const reviews = Array.isArray(aiReview?.reviews) ? aiReview.reviews : [];
       const reviewRows = reviews.map((review: any) => ({
@@ -229,7 +203,6 @@ async function processJob(job: any) {
         review_notes: review.reviewNotes || null,
         raw_review: review,
       }));
-
       if (reviewRows.length) {
         const { error: reviewError } = await store.from("test_ai_reviews").insert(reviewRows);
         if (reviewError) throw reviewError;
@@ -259,6 +232,5 @@ while (true) {
   } catch (error) {
     console.error("[TrialIQ] Polling error:", error instanceof Error ? error.message : String(error));
   }
-
   await sleep(pollMs);
 }
