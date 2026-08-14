@@ -1,7 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
+import os from "node:os";
+import path from "node:path";
+
+const outputDir = process.env.PLAYWRIGHT_OUTPUT_DIR || path.join(os.tmpdir(), "trialiq-playwright-results");
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  outputDir,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -12,15 +17,12 @@ export default defineConfig({
     [
       "json",
       {
-        outputFile:
-          process.env.PLAYWRIGHT_REPORT_FILE || "test-reports/latest/results.json",
+        outputFile: process.env.PLAYWRIGHT_REPORT_FILE || path.join(outputDir, "results.json"),
       },
     ],
   ],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
-    // Web test runner defaults to headless. Set PLAYWRIGHT_HEADLESS=false
-    // only when deliberately running Playwright manually with a visible browser.
     headless: process.env.PLAYWRIGHT_HEADLESS !== "false",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
