@@ -1,7 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"] as const;
+
+// Prefer stable, lightweight models first. Gemini rate limits are applied per
+// project and vary by model, so a model-specific fallback can keep the local
+// QA harness running when one model is temporarily exhausted.
+const MODELS = [
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+] as const;
 
 const SYSTEM = `
 You are TrialIQ's cross-document clinical trial intelligence engine. Think like a clinical data review team, not a document summarizer.
@@ -156,7 +166,7 @@ QUALITY BAR:
 - For medication/event timing, state temporal association and keep causality separate.
 - For deviations, explain potential data-integrity and operational impact without inventing severity.
 - For clusters, preserve the single-participant limitation.
-- For undocumented exclusion criteria, use Pending/Review Required.
+- For undocumented exclusion criteria, use Pending/Review Required. Never mark an eligibility conclusion confirmed when required supporting evidence is missing.
 - Explicitly identify contradictions and what evidence resolves them.
 - If prior measurements are supplied, distinguish new change from known finding and quantify direction/magnitude when possible.
 - Every recommendation must be actionable for a reviewer or coordinator.
