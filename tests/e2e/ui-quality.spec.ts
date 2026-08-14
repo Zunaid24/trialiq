@@ -84,7 +84,13 @@ test.describe("TrialIQ UI quality — authenticated navigation", () => {
   test("10 — clinical intelligence page exposes the evidence-to-decision workflow", async ({ page }) => {
     await page.goto("/dashboard/clinical-intelligence");
     await expect(page.getByRole("heading", { name: /from evidence to decisions/i })).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole("button", { name: /refresh intelligence/i })).toBeVisible();
+
+    // The page starts by generating intelligence, so the same control is briefly
+    // labelled "Connecting evidence…" before becoming "Refresh intelligence".
+    // Validate the header action itself rather than racing that transient label.
+    const intelligenceAction = page.locator("header button");
+    await expect(intelligenceAction).toBeVisible({ timeout: 15_000 });
+    await expect(intelligenceAction).toHaveText(/refresh intelligence|connecting evidence/i, { timeout: 15_000 });
   });
 
   test("11 — clinical intelligence exposes its core review sections", async ({ page }) => {
