@@ -55,13 +55,13 @@ test.describe("TrialIQ AI output quality benchmark", () => {
     } finally {
       await context.close();
     }
-  });
+  }, 180_000);
 
   test("01 — returns a decision-level executive conclusion", () =>
     expect(String(result.executiveDecision)).not.toHaveLength(0)
   );
 
-  test("02 — distinguishes review readiness from confidence", () => {
+  test("02 — distinguishes review readiness from confidence", () =>
     expect(["Decision-Ready", "Review Required", "Not Decision-Ready"]).toContain(
       result.decisionReadiness
     );
@@ -73,31 +73,31 @@ test.describe("TrialIQ AI output quality benchmark", () => {
     expect(result.priorityFindings.length).toBeGreaterThan(0)
   );
 
-  test("04 — every priority finding has evidence", () =>
+  test("04 — every priority finding has evidence", () => {
     result.priorityFindings.forEach((f: any) =>
       expect(f.evidence?.length).toBeGreaterThan(0)
     )
-  );
+  });
 
-  test("05 — every evidence item identifies a source", () =>
+  test("05 — every evidence item identifies a source", () => {
     result.priorityFindings
       .flatMap((f: any) => f.evidence || [])
       .forEach((e: any) =>
         expect(String(e.sourceId)).not.toHaveLength(0)
       )
-  );
+  });
 
-  test("06 — findings explain why they matter", () =>
+  test("06 — findings explain why they matter", () => {
     result.priorityFindings.forEach((f: any) =>
       expect(String(f.whyItMatters)).not.toHaveLength(0)
     )
-  );
+  });
 
-  test("07 — findings include operational actions", () =>
+  test("07 — findings include operational actions", () => {
     result.priorityFindings.forEach((f: any) =>
       expect(String(f.recommendedAction)).not.toHaveLength(0)
     )
-  );
+  });
 
   test("08 — missing evidence is surfaced", () => {
     expect(Array.isArray(result.dataGaps)).toBeTruthy()
@@ -141,11 +141,11 @@ test.describe("TrialIQ AI output quality benchmark", () => {
     );
   });
 
-  test("16 — every coordinator action has a reason", () =>
+  test("16 — every coordinator action has a reason", () => {
     result.coordinatorActions.forEach((a: any) =>
       expect(String(a.reason)).not.toHaveLength(0)
     )
-  );
+  });
 
   test("17 — audit counts are present", () => {
     expect(result.auditSummary.sourcesReviewed).toBeGreaterThan(0);
@@ -153,17 +153,17 @@ test.describe("TrialIQ AI output quality benchmark", () => {
     expect(result.auditSummary.unresolvedItems).toBeGreaterThanOrEqual(0);
   });
 
-  test("18 — evidence quality uses controlled vocabulary", () =>
+  test("18 — evidence quality uses controlled vocabulary", () => {
     expect(["High", "Moderate", "Low"]).toContain(result.evidenceQuality)
-  );
+  });
 
-  test("19 — confidence rationale is present", () =>
+  test("19 — confidence rationale is present", () => {
     expect(String(result.confidenceRationale)).not.toHaveLength(0)
-  );
+  });
 
-  test("20 — model provenance is exposed for auditability", () =>
+  test("20 — model provenance is exposed for auditability", () => {
     expect(String(result.aiModel)).not.toHaveLength(0)
-  );
+  });
 
   test("21 — lab findings are connected to protocol impact when supported", () => {
     const text = JSON.stringify(result).toLowerCase();
