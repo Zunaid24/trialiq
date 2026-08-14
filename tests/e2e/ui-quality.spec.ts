@@ -131,7 +131,20 @@ test.describe("TrialIQ UI quality — authenticated navigation", () => {
   });
 
   test("11 — clinical intelligence exposes its core review sections", async ({ page }) => {
+    const intelligenceResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/clinical-intelligence") &&
+        response.request().method() === "POST",
+      { timeout: 30_000 }
+    );
+
     await page.goto("/dashboard/clinical-intelligence");
+    const response = await intelligenceResponse;
+    expect(response.ok()).toBeTruthy();
+
+    // Clinical Intelligence sections render after the evidence-to-decision
+    // response arrives. Wait for that application state instead of racing
+    // the asynchronous generation request after navigation.
     await expect(page.getByRole("heading", { name: /priority findings/i })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("heading", { name: /cross-document connections/i })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("heading", { name: /protocol impact/i })).toBeVisible({ timeout: 15_000 });
