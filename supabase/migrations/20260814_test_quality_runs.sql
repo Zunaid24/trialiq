@@ -47,6 +47,7 @@ create table if not exists public.test_results (
   test_id text,
   test_name text not null,
   test_file text,
+  test_line integer,
   status text not null check (status in ('PASS','FAIL','SKIP','FLAKY')),
   duration_ms integer not null default 0,
   error_message text,
