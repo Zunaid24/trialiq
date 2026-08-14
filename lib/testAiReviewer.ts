@@ -6,7 +6,7 @@ const PRIMARY_MODEL = process.env.TEST_REVIEW_MODEL || "gemini-3.6-flash";
 const DEFAULT_FALLBACK_MODELS = [
   "gemini-3.5-flash-lite",
   "gemini-3.1-flash-lite",
-  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
 ];
 const REVIEW_MODELS = Array.from(new Set([
   PRIMARY_MODEL,
@@ -66,6 +66,12 @@ function getRetryAfterSeconds(error: unknown) {
   return detailMatch ? Math.ceil(Number(detailMatch[1])) : null;
 }
 
+function isModelUnavailableError(error: unknown) {
+  const message = getErrorMessage(error).toLowerCase();
+  const code = getErrorCode(error);
+  return code === 404 || code === "404" || message.includes("not_found") || message.includes("no longer available") || message.includes("model not found") || message.includes("is not found");
+}
+
 function quotaSummary(models: string[], retryAfterSeconds: number | null) {
   const modelList = models.join(" → ");
   return retryAfterSeconds
@@ -101,18 +107,7 @@ Return ONLY valid JSON:
   "model":"",
   "overallScore":0,
   "overallSummary":"",
-  "reviews":[{
-    "testId":0,
-    "score":0,
-    "verdict":"Strong | Good | Needs Improvement | Critical",
-    "rootCauseLayer":"AI_OUTPUT | UI | FLOW | TEST | INFRASTRUCTURE | NONE",
-    "rootCauseConfidence":0,
-    "isProductDefect":true,
-    "strengths":[""],
-    "issues":[{"severity":"High | Medium | Low","issue":"","evidence":""}],
-    "recommendations":[{"priority":"P0 | P1 | P2","layer":"AI_OUTPUT | UI | FLOW | TEST | INFRASTRUCTURE","recommendation":"","expectedImpact":""}],
-    "reviewNotes":""
-  }]
+  "reviews":[{"testId":0,"score":0,"verdict":"Strong | Good | Needs Improvement | Critical","rootCauseLayer":"AI_OUTPUT | UI | FLOW | TEST | INFRASTRUCTURE | NONE","rootCauseConfidence":0,"isProductDefect":true,"strengths":[""],"issues":[{"severity":"High | Medium | Low","issue":"","evidence":""}],"recommendations":[{"priority":"P0 | P1 | P2","layer":"AI_OUTPUT | UI | FLOW | TEST | INFRASTRUCTURE","recommendation":"","expectedImpact":""}],"reviewNotes":""}]
 }
 
 Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 critical. Use rootCauseLayer NONE when the test is healthy and no supported improvement is necessary. Use TEST when the assertion itself is the problem. Use UI/FLOW when correct AI behavior is poorly presented or hard to use. Use AI_OUTPUT only when the model result itself is wrong or deficient.`;
@@ -130,7 +125,7 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
     parts.push({ inlineData: { mimeType: "image/jpeg", data: test.evidence.screenshotBase64 } });
   }
 
-  const quotaModels: string[] = [];
+  const attemptedModels: string[] = [];
   let lastError: unknown = null;
   let lastRetryAfterSeconds: number | null = null;
 
@@ -139,7 +134,7 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
       const response = await ai.models.generateContent({
         model,
         contents: [{ role: "user", parts }],
-        config: { responseMimeType: "application/json", temperature: 0.1 },
+        config: { responseMimeType: "application/json" },
       });
 
       const parsed = extractJson(response.text ?? "");
@@ -147,39 +142,46 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
         ...parsed,
         status: "COMPLETE",
         model,
-        attemptedModels: quotaModels.length ? [...quotaModels, model] : [model],
+        attemptedModels: [...attemptedModels, model],
         fallbackUsed: model !== PRIMARY_MODEL,
       };
     } catch (error) {
       lastError = error;
       lastRetryAfterSeconds = getRetryAfterSeconds(error);
-      if (!isQuotaError(error)) {
-        return {
-          status: "ERROR",
-          model,
-          attemptedModels: [...quotaModels, model],
-          fallbackUsed: model !== PRIMARY_MODEL,
-          overallScore: null,
-          reviews: [],
-          error: getErrorMessage(error),
-          overallSummary: "The deterministic test suite completed, but the AI review layer encountered an error. The automated test results remain authoritative.",
-        };
-      }
+      attemptedModels.push(model);
+      if (isQuotaError(error) || isModelUnavailableError(error)) continue;
 
-      quotaModels.push(model);
+      return {
+        status: "ERROR",
+        model,
+        attemptedModels,
+        fallbackUsed: model !== PRIMARY_MODEL,
+        overallScore: null,
+        reviews: [],
+        error: getErrorMessage(error),
+        overallSummary: "The deterministic test suite completed, but the AI review layer encountered an error. The automated test results remain authoritative.",
+      };
     }
   }
 
+  const allQuota = attemptedModels.length > 0 && attemptedModels.every((model, index) => {
+    return index === attemptedModels.length - 1 ? isQuotaError(lastError) : true;
+  });
+
   return {
-    status: "QUOTA_LIMITED",
-    model: quotaModels[quotaModels.length - 1] || PRIMARY_MODEL,
-    attemptedModels: quotaModels,
-    fallbackUsed: quotaModels.length > 1,
+    status: allQuota ? "QUOTA_LIMITED" : "ERROR",
+    model: attemptedModels[attemptedModels.length - 1] || PRIMARY_MODEL,
+    attemptedModels,
+    fallbackUsed: attemptedModels.length > 1,
     overallScore: null,
     reviews: [],
-    error: quotaSummary(quotaModels, lastRetryAfterSeconds),
+    error: allQuota
+      ? quotaSummary(attemptedModels, lastRetryAfterSeconds)
+      : getErrorMessage(lastError),
     retryAfterSeconds: lastRetryAfterSeconds,
-    overallSummary: "The deterministic test suite completed, but every configured Gemini reviewer model was quota-limited. No automated test result was changed or retried.",
+    overallSummary: allQuota
+      ? "The deterministic test suite completed, but every configured Gemini reviewer model was quota-limited. No automated test result was changed or retried."
+      : "The deterministic test suite completed, but the configured AI reviewer models were unavailable. The automated test results remain authoritative.",
     lastProviderError: getErrorMessage(lastError),
   };
 }
