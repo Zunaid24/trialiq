@@ -44,9 +44,9 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       expect(payload.success).toBeTruthy();
       result = payload.result;
 
-      await expect(
-        page.getByRole("heading", { name: /Priority findings/i })
-      ).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole("heading", { name: /Priority findings/i })).toBeVisible({
+        timeout: 10_000,
+      });
     } finally {
       await context.close();
     }
@@ -57,9 +57,9 @@ test.describe("TrialIQ AI output quality benchmark", () => {
   });
 
   test("02 — distinguishes review readiness from confidence", () => {
-    expect(["Decision-Ready", "Review Required", "Not Decision-Ready"]).toContain(
-      result.decisionReadiness
-    );
+    expect(
+      ["Decision-Ready", "Review Required", "Not Decision-Ready"]
+    ).toContain(result.decisionReadiness);
     expect(result.confidence).toBeGreaterThanOrEqual(0);
     expect(result.confidence).toBeLessThanOrEqual(100);
   });
@@ -77,7 +77,9 @@ test.describe("TrialIQ AI output quality benchmark", () => {
   test("05 — every evidence item identifies a source", () => {
     result.priorityFindings
       .flatMap((f: any) => f.evidence || [])
-      .forEach((e: any) => expect(String(e.sourceId)).not.toHaveLength(0));
+      .forEach((e: any) =>
+        expect(String(e.sourceId)).not.toHaveLength(0)
+      );
   });
 
   test("06 — findings explain why they matter", () => {
@@ -110,22 +112,49 @@ test.describe("TrialIQ AI output quality benchmark", () => {
 
   test("12 — single-participant evidence is not promoted to population incidence", () => {
     const text = JSON.stringify(result).toLowerCase();
-    expect(text).not.toMatch(/population[- ]level (incidence|rate|signal) established/);
+    expect(text).not.toMatch(
+      /population[- ]level (incidence|rate|signal) established/
+    );
   });
 
   test("13 — temporal association is not presented as causality", () => {
     const text = JSON.stringify(result).toLowerCase();
-    expect(text).not.toMatch(/proves? .*causality|confirmed .*causal relationship/);
+    expect(text).not.toMatch(
+      /proves? .*causality|confirmed .*causal relationship/
+    );
   });
 
   test("14 — undocumented eligibility evidence remains reviewable", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).not.toMatch(/undocumented.*(met|eligible|confirmed)/);
+    const eligibilityText = [
+      result.executiveDecision,
+      result.executiveSummary,
+      ...(result.priorityFindings || []).map((f: any) =>
+        [f.title, f.finding, f.interpretation, f.status].join(" ")
+      ),
+      ...(result.dataGaps || []).map((g: any) =>
+        [g.gap, g.whyItMatters, g.nextAction].join(" ")
+      ),
+      JSON.stringify(result.protocolImpact),
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    // Reviewable eligibility evidence must not be represented as confirmed
+    // merely because another unrelated field (for example AE status) is confirmed.
+    expect(eligibilityText).toMatch(/eligib|exclusion|washout/);
+    expect(eligibilityText).toMatch(
+      /review|required|unconfirmed|cannot be confirmed|not met|missing|pending/
+    );
+    expect(eligibilityText).not.toMatch(
+      /undocumented[^.]{0,120}(met|eligible|confirmed)/
+    );
   });
 
   test("15 — recommendations remain operational", () => {
     const text = JSON.stringify(result).toLowerCase();
-    expect(text).not.toMatch(/increase dose|decrease dose|start treatment|stop treatment/);
+    expect(text).not.toMatch(
+      /increase dose|decrease dose|start treatment|stop treatment/
+    );
   });
 
   test("16 — every coordinator action has a reason", () => {
@@ -161,7 +190,9 @@ test.describe("TrialIQ AI output quality benchmark", () => {
   test("22 — medication reasoning does not invent a prohibited-medication conclusion", () => {
     const text = JSON.stringify(result).toLowerCase();
     expect(text).toMatch(/prednisone|medication/);
-    expect(text).not.toMatch(/prednisone (is|was) (definitely|confirmed) prohibited/);
+    expect(text).not.toMatch(
+      /prednisone (is|was) (definitely|confirmed) prohibited/
+    );
   });
 
   test("23 — protocol deviation reasoning addresses operational or data-integrity impact", () => {
@@ -173,12 +204,16 @@ test.describe("TrialIQ AI output quality benchmark", () => {
   test("24 — medical coding reasoning does not fabricate final dictionary codes", () => {
     const text = JSON.stringify(result).toLowerCase();
     expect(text).toMatch(/coding|meddra/);
-    expect(text).not.toMatch(/final (meddra|dictionary) (code|id|identifier) is \d+/);
+    expect(text).not.toMatch(
+      /final (meddra|dictionary) (code|id|identifier) is \d+/
+    );
   });
 
   test("25 — overall decision coherence reflects unresolved evidence", () => {
     const text = JSON.stringify(result).toLowerCase();
-    expect(text).toMatch(/review required|not decision-ready|pending|unresolved|cannot (confirm|finalize)/);
+    expect(text).toMatch(
+      /review required|not decision-ready|pending|unresolved|cannot (confirm|finalize)/
+    );
     expect(result.dataGaps.length).toBeGreaterThan(0);
   });
 });
