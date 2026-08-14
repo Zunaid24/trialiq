@@ -1,0 +1,287 @@
+{
+  "id": "2026-08-14_16-02-19Z",
+  "suite": "UI Quality",
+  "suiteKey": "ui",
+  "startedAt": "2026-08-14T16:02:19.094Z",
+  "completedAt": "2026-08-14T16:03:43.422Z",
+  "durationMs": 84328,
+  "status": "FAIL",
+  "total": 12,
+  "passed": 11,
+  "failed": 1,
+  "result": null,
+  "tests": [
+    {
+      "id": 1,
+      "name": "01 — landing page exposes the primary workspace CTA",
+      "passed": true,
+      "durationMs": 2596
+    },
+    {
+      "id": 2,
+      "name": "02 — auth page exposes usable sign-in controls",
+      "passed": true,
+      "durationMs": 1466
+    },
+    {
+      "id": 3,
+      "name": "03 — auth form has keyboard-focusable controls",
+      "passed": true,
+      "durationMs": 1454
+    },
+    {
+      "id": 4,
+      "name": "04 — dashboard renders the core application navigation",
+      "passed": true,
+      "durationMs": 6632
+    },
+    {
+      "id": 5,
+      "name": "05 — review queue route loads",
+      "passed": true,
+      "durationMs": 3362
+    },
+    {
+      "id": 6,
+      "name": "06 — clinical workspace route loads",
+      "passed": true,
+      "durationMs": 3145
+    },
+    {
+      "id": 7,
+      "name": "07 — analytics route loads",
+      "passed": true,
+      "durationMs": 3695
+    },
+    {
+      "id": 8,
+      "name": "08 — reports route loads",
+      "passed": true,
+      "durationMs": 4028
+    },
+    {
+      "id": 9,
+      "name": "09 — settings route loads",
+      "passed": true,
+      "durationMs": 4061
+    },
+    {
+      "id": 10,
+      "name": "10 — clinical intelligence page exposes the evidence-to-decision workflow",
+      "passed": true,
+      "durationMs": 4564
+    },
+    {
+      "id": 11,
+      "name": "11 — clinical intelligence exposes its core review sections",
+      "passed": false,
+      "durationMs": 18712,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /priority findings/i })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /priority findings/i })\u001b[22m\n"
+    },
+    {
+      "id": 12,
+      "name": "12 — clinical intelligence presents the reviewer disclaimer",
+      "passed": true,
+      "durationMs": 13909
+    }
+  ],
+  "aiReview": {
+    "status": "COMPLETE",
+    "model": "gemini-3.5-flash-lite",
+    "overallScore": 82,
+    "overallSummary": "The UI quality suite executes successfully across most key marketing, authentication, and dashboard navigation routes, demonstrating clean layout design and robust component structure. However, test 11 failed due to a timeout because the clinical intelligence route remains stuck in a loading state ('Connecting evidence…') during test execution, pointing to a state handling issue or asynchronous data fetch delay.",
+    "reviews": [
+      {
+        "testId": 1,
+        "score": 95,
+        "verdict": "Strong",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Clear value proposition and visual hierarchy on the landing page",
+          "Prominent and accessible primary CTA ('Launch Workspace')"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Landing page experience is well-structured and functional."
+      },
+      {
+        "testId": 2,
+        "score": 90,
+        "verdict": "Strong",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Clean sign-in interface with visible form controls and clear helper text"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Auth page correctly exposes usable controls."
+      },
+      {
+        "testId": 3,
+        "score": 90,
+        "verdict": "Strong",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Good accessibility adherence with keyboard focusable form inputs and buttons"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Keyboard navigation functions as expected on the auth form."
+      },
+      {
+        "testId": 4,
+        "score": 90,
+        "verdict": "Strong",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Comprehensive dashboard sidebar navigation covering all core application routes"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Application shell renders core navigation properly."
+      },
+      {
+        "testId": 5,
+        "score": 85,
+        "verdict": "Good",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Review queue route mounts successfully with proper layout and state indicators"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Route loads correctly."
+      },
+      {
+        "testId": 6,
+        "score": 95,
+        "verdict": "Strong",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Rich clinical workspace layout offering direct entry points into specialized workflows"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Clinical workspace route renders all required sub-modules."
+      },
+      {
+        "testId": 7,
+        "score": 85,
+        "verdict": "Good",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Analytics route loads cleanly within the dashboard layout shell"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Route is functional."
+      },
+      {
+        "testId": 8,
+        "score": 90,
+        "verdict": "Strong",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Reports view presents clear filters, export capabilities, and tabular summary data"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Reports interface is fully realized and informative."
+      },
+      {
+        "testId": 9,
+        "score": 90,
+        "verdict": "Strong",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Settings page provides logical grouping for profile, password management, and workspace access"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Settings route loads with clear controls."
+      },
+      {
+        "testId": 10,
+        "score": 80,
+        "verdict": "Good",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Initial loading state correctly communicates background evidence connection"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Initial transition renders correctly."
+      },
+      {
+        "testId": 11,
+        "score": 65,
+        "verdict": "Needs Improvement",
+        "rootCauseLayer": "FLOW",
+        "rootCauseConfidence": 0.85,
+        "isProductDefect": true,
+        "strengths": [],
+        "issues": [
+          {
+            "severity": "High",
+            "issue": "Clinical intelligence view remains stuck in loading state ('Connecting evidence…') during test execution, causing test timeout when searching for priority findings heading.",
+            "evidence": "Test 11 failed with timeout waiting for getByRole('heading', { name: /priority findings/i }); screenshot shows persistent loading spinner."
+          }
+        ],
+        "recommendations": [
+          {
+            "priority": "P1",
+            "layer": "FLOW",
+            "recommendation": "Optimize the asynchronous evidence-fetching lifecycle or add a timeout fallback state on the clinical intelligence route so users are not indefinitely blocked on loading indicators.",
+            "expectedImpact": "Prevents UI lockups and ensures core intelligence sections render reliably."
+          }
+        ],
+        "reviewNotes": "Although test 12 eventually succeeds after a long delay, test 11 fails due to the timeout. The prolonged loading sequence represents a flow/state handling bottleneck."
+      },
+      {
+        "testId": 12,
+        "score": 95,
+        "verdict": "Strong",
+        "rootCauseLayer": "NONE",
+        "rootCauseConfidence": 1,
+        "isProductDefect": false,
+        "strengths": [
+          "Extremely thorough, well-formatted evidence-backed clinical intelligence review output",
+          "Clear separation of decision readiness, critical findings, missing evidence, and coordinator action plans",
+          "Prominent reviewer disclaimers ensuring proper human-in-the-loop oversight"
+        ],
+        "issues": [],
+        "recommendations": [],
+        "reviewNotes": "Once loaded, the clinical intelligence view provides exceptional analytical depth and traceability."
+      }
+    ],
+    "fallbackUsed": true,
+    "attemptedModels": [
+      "quota-limited",
+      "gemini-3.5-flash-lite"
+    ]
+  },
+  "evidenceDir": "2026-08-14_16-02-19Z/evidence",
+  "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /priority findings/i })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /priority findings/i })\u001b[22m\n",
+  "logs": "Running 12 tests using 1 worker\n\n  ✓   1 [chromium] › tests\\e2e\\ui-quality.spec.ts:61:7 › TrialIQ UI quality — public › 01 — landing page exposes the primary workspace CTA (2.6s)\n  ✓   2 [chromium] › tests\\e2e\\ui-quality.spec.ts:67:7 › TrialIQ UI quality — public › 02 — auth page exposes usable sign-in controls (1.5s)\n  ✓   3 [chromium] › tests\\e2e\\ui-quality.spec.ts:74:7 › TrialIQ UI quality — public › 03 — auth form has keyboard-focusable controls (1.5s)\n  ✓   4 [chromium] › tests\\e2e\\ui-quality.spec.ts:92:7 › TrialIQ UI quality — authenticated navigation › 04 — dashboard renders the core application navigation (6.6s)\n  ✓   5 [chromium] › tests\\e2e\\ui-quality.spec.ts:101:7 › TrialIQ UI quality — authenticated navigation › 05 — review queue route loads (3.4s)\n  ✓   6 [chromium] › tests\\e2e\\ui-quality.spec.ts:106:7 › TrialIQ UI quality — authenticated navigation › 06 — clinical workspace route loads (3.1s)\n  ✓   7 [chromium] › tests\\e2e\\ui-quality.spec.ts:111:7 › TrialIQ UI quality — authenticated navigation › 07 — analytics route loads (3.7s)\n  ✓   8 [chromium] › tests\\e2e\\ui-quality.spec.ts:116:7 › TrialIQ UI quality — authenticated navigation › 08 — reports route loads (4.0s)\n  ✓   9 [chromium] › tests\\e2e\\ui-quality.spec.ts:121:7 › TrialIQ UI quality — authenticated navigation › 09 — settings route loads (4.1s)\n  ✓  10 [chromium] › tests\\e2e\\ui-quality.spec.ts:126:7 › TrialIQ UI quality — authenticated navigation › 10 — clinical intelligence page exposes the evidence-to-decision workflow (4.6s)\n  ✘  11 [chromium] › tests\\e2e\\ui-quality.spec.ts:133:7 › TrialIQ UI quality — authenticated navigation › 11 — clinical intelligence exposes its core review sections (18.7s)\n  ✓  12 [chromium] › tests\\e2e\\ui-quality.spec.ts:143:7 › TrialIQ UI quality — authenticated navigation › 12 — clinical intelligence presents the reviewer disclaimer (13.9s)\n\n\n  1) [chromium] › tests\\e2e\\ui-quality.spec.ts:133:7 › TrialIQ UI quality — authenticated navigation › 11 — clinical intelligence exposes its core review sections \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: getByRole('heading', { name: /priority findings/i })\n    Expected: visible\n    Timeout: 15000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" with timeout 15000ms\n      - waiting for getByRole('heading', { name: /priority findings/i })\n\n\n      133 |   test(\"11 — clinical intelligence exposes its core review sections\", async ({ page }) => {\n      134 |     await page.goto(\"/dashboard/clinical-intelligence\");\n    > 135 |     await expect(page.getByRole(\"heading\", { name: /priority findings/i })).toBeVisible({ timeout: 15_000 });\n          |                                                                             ^\n      136 |     await expect(page.getByRole(\"heading\", { name: /cross-document connections/i })).toBeVisible({ timeout: 15_000 });\n      137 |     await expect(page.getByRole(\"heading\", { name: /protocol impact/i })).toBeVisible({ timeout: 15_000 });\n      138 |     await expect(page.getByRole(\"heading\", { name: /safety assessment/i })).toBeVisible({ timeout: 15_000 });\n        at C:\\Users\\hp\\Desktop\\trialiq\\tests\\e2e\\ui-quality.spec.ts:135:77\n\n    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────\n    test-results\\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\\test-failed-1.png\n    ────────────────────────────────────────────────────────────────────────────────────────────────\n\n    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────\n    test-results\\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\\video.webm\n    ────────────────────────────────────────────────────────────────────────────────────────────────\n\n    Error Context: test-results\\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\\error-context.md\n\n    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────\n    test-results\\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\\trace.zip\n    Usage:\n\n        npx playwright show-trace test-results\\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\\trace.zip\n\n    ────────────────────────────────────────────────────────────────────────────────────────────────\n\n  1 failed\n    [chromium] › tests\\e2e\\ui-quality.spec.ts:133:7 › TrialIQ UI quality — authenticated navigation › 11 — clinical intelligence exposes its core review sections \n  11 passed (1.2m)",
+  "logFile": "2026-08-14_16-02-19Z.log.txt"
+}

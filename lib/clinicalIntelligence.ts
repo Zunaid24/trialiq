@@ -1,7 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"] as const;
+
+// Current stable Gemini models. Keep the cheapest high-throughput model first,
+// then fall back to stronger stable models when a model is unavailable or quota-limited.
+const MODELS = [
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+] as const;
 
 const SYSTEM = `
 You are TrialIQ's cross-document clinical trial intelligence engine. Think like a clinical data review team, not a document summarizer.
@@ -27,6 +35,12 @@ NON-NEGOTIABLE RULES:
 - Temporal association is not causality. State timing separately from causal interpretation.
 - A missing assessment must remain Pending/Review Required, not negative.
 - Recommendations must be operational and specific.
+
+POPULATION INFERENCE GUARDRAIL:
+- Treat participant-level evidence as participant-level evidence unless supplied sources explicitly contain population-level data.
+- When the evidence is limited to a single participant, you MUST explicitly state that population-level inference is not supported.
+- In the output, populate populationInference with supported=false, scope="Single Participant", and a concise rationale that uses the phrase "does not support population-level inference".
+- Never imply that a single participant establishes, confirms, or demonstrates a population incidence, rate, or safety signal.
 
 DECISION VALUE:
 - Prioritize findings that can change enrollment/eligibility, participant safety review, protocol compliance, data integrity, coding quality or coordinator workload.
@@ -75,6 +89,41 @@ function parseJson(text: string) {
   }
 }
 
+function enforcePopulationInferenceGuardrail(result: any) {
+  const participantId = typeof result?.participantId === "string" ? result.participantId.trim() : "";
+  const existing = result?.populationInference;
+
+  if (existing && typeof existing === "object") {
+    existing.supported = existing.supported === true && !participantId;
+    if (!existing.scope) existing.scope = participantId ? "Single Participant" : "Unknown";
+    if (!existing.rationale || participantId) {
+      existing.rationale = participantId
+        ? "The available evidence is participant-level and does not support population-level inference."
+        : existing.rationale || "Population-level inference requires explicit population-level source evidence.";
+    }
+    return;
+  }
+
+  result.populationInference = participantId
+    ? {
+        supported: false,
+        scope: "Single Participant",
+        rationale: "The available evidence is participant-level and does not support population-level inference.",
+      }
+    : {
+        supported: false,
+        scope: "Unknown",
+        rationale: "Population-level inference requires explicit population-level source evidence.",
+      };
+}
+
+function isRetryableModelError(error: unknown) {
+  const value = error as any;
+  const message = error instanceof Error ? error.message : String(error);
+  const status = value?.status ?? value?.code ?? value?.error?.status ?? value?.error?.code;
+  return status === 404 || status === "404" || status === 429 || status === "429" || status === "RESOURCE_EXHAUSTED" || /not found|no longer available|quota exceeded|resource_exhausted|too many requests/i.test(message);
+}
+
 export async function analyzeClinicalIntelligence(evidencePack: unknown) {
   const prompt = `
 Build an executive Clinical Intelligence assessment for the supplied study evidence.
@@ -86,6 +135,7 @@ Return exactly this shape:
   "executiveDecision":"",
   "decisionReadiness":"Decision-Ready | Review Required | Not Decision-Ready",
   "executiveSummary":"",
+  "populationInference":{"supported":false,"scope":"Single Participant | Population | Unknown","rationale":""},
   "priorityFindings":[
     {
       "priority":"Critical | High | Moderate",
@@ -121,21 +171,36 @@ QUALITY BAR:
 - For medication/event timing, state temporal association and keep causality separate.
 - For deviations, explain potential data-integrity and operational impact without inventing severity.
 - For clusters, preserve the single-participant limitation.
-- For undocumented exclusion criteria, use Pending/Review Required.
+- For undocumented exclusion criteria, use Pending/Review Required. Never mark an eligibility conclusion confirmed when required supporting evidence is missing.
 - Explicitly identify contradictions and what evidence resolves them.
 - If prior measurements are supplied, distinguish new change from known finding and quantify direction/magnitude when possible.
 - Every recommendation must be actionable for a reviewer or coordinator.
+- If participantId identifies a single participant, populationInference.supported MUST be false and populationInference.rationale MUST explicitly say that the evidence does not support population-level inference.
 
 EVIDENCE PACK:\n${JSON.stringify(evidencePack, null, 2)}`;
 
   let lastError: unknown;
   for (const model of MODELS) {
     try {
-      const response = await ai.models.generateContent({ model, contents: `${SYSTEM}\n${prompt}`, config: { responseMimeType: "application/json", temperature: 0.1 } });
+      // Gemini 3.x deprecated sampling parameters such as temperature.
+      const response = await ai.models.generateContent({
+        model,
+        contents: `${SYSTEM}\n${prompt}`,
+        config: { responseMimeType: "application/json" },
+      });
       const result = parseJson(response.text ?? "");
-      if (result && typeof result === "object") { result.aiModel = model; result.aiFallbackUsed = model !== MODELS[0]; }
+      if (result && typeof result === "object") {
+        enforcePopulationInferenceGuardrail(result);
+        result.aiModel = model;
+        result.aiFallbackUsed = model !== MODELS[0];
+      }
       return result;
-    } catch (error) { lastError = error; }
+    } catch (error) {
+      lastError = error;
+      if (isRetryableModelError(error)) continue;
+      continue;
+    }
   }
+
   throw lastError ?? new Error("Clinical intelligence analysis failed.");
 }

@@ -1,0 +1,33 @@
+{
+  "testId": 9,
+  "testName": "09 — settings route loads",
+  "status": "passed",
+  "durationMs": 4692,
+  "url": "http://localhost:3000/dashboard/settings",
+  "visibleText": "iq\nTrialIQ AI\nMVP\nDashboard\nClinical Intelligence\nClinical Memory\nReview Queue\nClinical Workspace\nAnalytics\nReports\nSettings\nSign out\n9+\n\nZunaid Ahmed Khan\n\nxunayd786@gmail.com\n\nZ\n\nACCOUNT\n\nSettings\n\nManage your profile and workspace access.\n\nProfile\n\nYour account information\n\nFull name\nEmail\nPassword\n\nChange your account password\n\nNew password\nConfirm password\nChange password\nWorkspace access\n\nYour assigned role controls what you can access. Only administrators can change team roles.\n\nClinical Coordinator\n\nTeam management\n\nInvite teammates and manage role assignments\n\nSave changes",
+  "controls": [
+    "button: Open Next.js Dev Tools",
+    "a: TrialIQ AI home",
+    "a: Dashboard",
+    "a: Clinical Intelligence",
+    "a: Clinical Memory",
+    "a: Review Queue",
+    "a: Clinical Workspace",
+    "a: Analytics",
+    "a: Reports",
+    "a: Settings",
+    "button: Sign out",
+    "input: Search TrialIQ",
+    "button: Notifications, 12 unread",
+    "input: Zunaid Ahmed Khan",
+    "input: xunayd786@gmail.com",
+    "input: ",
+    "button: Show password",
+    "input: ",
+    "button: Show password",
+    "button: Change password",
+    "a: Team management Invite teammates and manage role assignments",
+    "button: Save changes"
+  ],
+  "screenshotPath": "C:\\Users\\hp\\Desktop\\trialiq\\test-reports\\web-runs\\2026-08-14_16-31-29Z\\evidence\\09.jpg"
+}

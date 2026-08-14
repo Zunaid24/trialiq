@@ -1,0 +1,19 @@
+{
+  "testId": 3,
+  "testName": "03 — auth form has keyboard-focusable controls",
+  "status": "passed",
+  "durationMs": 1673,
+  "url": "http://localhost:3000/auth",
+  "visibleText": "iq\nTrialIQ AI\n\nCLINICAL TRIAL INTELLIGENCE\n\nYour clinical intelligence workspace, securely tied to your account.\n\nSave studies, participant analyses, documents and findings so your TrialIQ workspace continues where you left off.\n\nPersistent study and analysis history\n\nUser-isolated clinical workspace data\n\nSecure account-based access\n\nWELCOME BACK\n\nSign in to TrialIQ\n\nContinue to your studies, findings and clinical workflows.\n\nEmail\nPassword\nSign in\nForgot password?\nDon't have a TrialIQ account? Create one",
+  "controls": [
+    "a: iq TrialIQ AI",
+    "a: iqTrialIQ AI",
+    "input: ",
+    "input: ",
+    "button: Sign in",
+    "button: Forgot password?",
+    "button: Create one",
+    "button: Open Next.js Dev Tools"
+  ],
+  "screenshotPath": "C:\\Users\\hp\\Desktop\\trialiq\\test-reports\\web-runs\\2026-08-14_14-32-37Z\\evidence\\03.jpg"
+}
