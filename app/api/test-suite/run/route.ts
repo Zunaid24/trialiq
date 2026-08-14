@@ -37,19 +37,45 @@ function flattenPlaywrightTests(value: any, output: any[] = []) {
 }
 
 async function runPlaywright(args: string[], env: NodeJS.ProcessEnv) {
-  return await new Promise<{ code: number; stdout: string; stderr: string }>((resolve, reject) => {
-    const child = spawn(npxCommand(), args, {
+  return await new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
+    const command = npxCommand();
+    const child = spawn(command, args, {
       cwd: process.cwd(),
       env,
       windowsHide: true,
+      // Windows resolves npx.cmd much more reliably through the shell when
+      // Playwright is launched from a Next.js server process.
+      shell: process.platform === "win32",
       stdio: ["ignore", "pipe", "pipe"],
     });
+
     let stdout = "";
     let stderr = "";
+    let settled = false;
+
+    const finish = (code: number) => {
+      if (settled) return;
+      settled = true;
+      resolve({ code, stdout, stderr });
+    };
+
     child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
     child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
-    child.on("error", reject);
-    child.on("close", (code) => resolve({ code: code ?? 1, stdout, stderr }));
+    child.on("error", (error) => {
+      stderr += `\n[runner spawn error] ${error.message}`;
+      finish(1);
+    });
+    child.on("close", (code) => finish(code ?? 1));
+
+    // Keep the HTTP request bounded while allowing the benchmark's own
+    // 120-second Playwright timeout to finish normally.
+    setTimeout(() => {
+      if (!settled) {
+        stderr += "\n[runner timeout] Playwright runner exceeded 170 seconds.";
+        child.kill();
+        finish(1);
+      }
+    }, 170_000);
   });
 }
 
@@ -66,11 +92,13 @@ export async function POST(request: NextRequest) {
     if (process.env.NODE_ENV === "production") {
       throw new Error("The local Playwright test runner is disabled in production. Run the TrialIQ app locally.");
     }
+
     if (!process.env.PLAYWRIGHT_EMAIL || !process.env.PLAYWRIGHT_PASSWORD) {
       throw new Error("PLAYWRIGHT_EMAIL and PLAYWRIGHT_PASSWORD must be configured once in .env.local. The web test page never asks for them.");
     }
 
     await fs.mkdir(dir, { recursive: true });
+
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       PLAYWRIGHT_BASE_URL: process.env.PLAYWRIGHT_BASE_URL || request.nextUrl.origin,
@@ -94,10 +122,10 @@ export async function POST(request: NextRequest) {
     const total = 25;
     const passed = tests.filter((test) => test.passed).length;
     const failed = total - passed;
-    const error = processResult.code === 0
+    const logs = `${processResult.stdout}${processResult.stderr ? `\n${processResult.stderr}` : ""}`.trim();
+    const error = processResult.code === 0 && passed === total
       ? undefined
-      : tests.find((test) => !test.passed)?.error || processResult.stderr.trim() || `Playwright exited with code ${processResult.code}`;
-    const logs = `${processResult.stdout}${processResult.stderr ? `\n${processResult.stderr}` : ""}`;
+      : tests.find((test) => !test.passed)?.error || logs || `Playwright exited with code ${processResult.code}`;
 
     const report = {
       id,
@@ -117,7 +145,10 @@ export async function POST(request: NextRequest) {
 
     await fs.writeFile(logPath, logs, "utf8");
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2), "utf8");
-    return NextResponse.json({ ok: true, report });
+
+    // Always return the run report so the UI can open the timestamped result
+    // page even when Playwright itself fails to launch or a gate fails.
+    return NextResponse.json({ ok: report.status === "PASS", report });
   } catch (error) {
     const completed = new Date();
     const message = error instanceof Error ? error.message : String(error);
@@ -135,8 +166,12 @@ export async function POST(request: NextRequest) {
       error: message,
       logs: message,
     };
+
     await fs.mkdir(dir, { recursive: true }).catch(() => undefined);
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2), "utf8").catch(() => undefined);
-    return NextResponse.json({ ok: false, report }, { status: 500 });
+    await fs.writeFile(logPath, message, "utf8").catch(() => undefined);
+
+    // A benchmark failure is a test result, not a broken dashboard request.
+    return NextResponse.json({ ok: false, report });
   }
 }
