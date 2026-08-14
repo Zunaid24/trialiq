@@ -14,23 +14,13 @@ const store = getTestRunStore();
 const { baseUrl, runnerId, pollMs } = getTestRunnerConfig();
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "trialiq-quality-"));
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function npxCommand() {
-  return process.platform === "win32" ? "npx.cmd" : "npx";
-}
-
-function runId() {
-  return new Date().toISOString().replace("T", "_").replace(/:/g, "-").replace(/\.\d{3}Z$/, "Z");
-}
+function sleep(ms: number) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+function npxCommand() { return process.platform === "win32" ? "npx.cmd" : "npx"; }
+function runId() { return new Date().toISOString().replace("T", "_").replace(/:/g, "-").replace(/\.\d{3}Z$/, "Z"); }
 
 async function runPlaywright(spec: string, env: NodeJS.ProcessEnv) {
   return new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
-    const child = spawn(npxCommand(), ["playwright", "test", spec, "--project=chromium"], {
-      cwd: process.cwd(), env, windowsHide: true, shell: process.platform === "win32", stdio: ["ignore", "pipe", "pipe"],
-    });
+    const child = spawn(npxCommand(), ["playwright", "test", spec, "--project=chromium"], { cwd: process.cwd(), env, windowsHide: true, shell: process.platform === "win32", stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -80,6 +70,11 @@ async function loadUiEvidence(dir: string, tests: any[]) {
   }));
 }
 
+function normalizeLayer(value: unknown) {
+  const layer = String(value || "NONE").toUpperCase().replace(/[-\s]/g, "_");
+  return ["AI_OUTPUT", "UI", "FLOW", "TEST", "INFRASTRUCTURE", "NONE"].includes(layer) ? layer : "NONE";
+}
+
 async function processJob(job: any) {
   const started = new Date();
   const id = runId();
@@ -117,6 +112,10 @@ async function processJob(job: any) {
       aiReview = { status: "ERROR", model: process.env.TEST_REVIEW_MODEL || "gemini-3.6-flash", overallScore: null, overallSummary: "Automated tests completed, but the AI review layer failed.", reviews: [], error: error instanceof Error ? error.message : String(error) };
     }
 
+    if (Array.isArray(aiReview?.reviews)) {
+      aiReview.reviews = aiReview.reviews.map((review: any) => ({ ...review, rootCauseLayer: normalizeLayer(review.rootCauseLayer), rootCauseConfidence: review.rootCauseConfidence == null ? null : Number(review.rootCauseConfidence), score: review.score == null ? null : Number(review.score) }));
+    }
+
     const completed = new Date();
     const runStatus = processResult.code === 0 && total > 0 && failed === 0 ? "PASS" : "FAIL";
     const { data: run, error: runError } = await store.from("test_runs").insert({ job_id: job.id, run_key: id, suite: suiteName, suite_key: suiteKey, started_at: started.toISOString(), completed_at: completed.toISOString(), duration_ms: completed.getTime() - started.getTime(), status: runStatus, total, passed, failed, skipped, flaky, worker_count: 1, browser: "chromium", base_url: baseUrl, git_commit: process.env.GIT_COMMIT || undefined, suite_version: process.env.TEST_SUITE_VERSION || "local-runner", command: `playwright test ${spec} --project=chromium`, raw_console_output: logs, raw_playwright_result: playwrightJson, raw_suite_result: suiteResult, ai_review: aiReview, error: failed ? tests.find((test) => !test.passed)?.errorMessage || logs : processResult.code !== 0 ? logs : null }).select("id").single();
@@ -128,7 +127,7 @@ async function processJob(job: any) {
       if (testError) throw testError;
       const testResultId = new Map((insertedTests || []).map((row) => [row.test_number, row.id]));
       const reviews = Array.isArray(aiReview?.reviews) ? aiReview.reviews : [];
-      const reviewRows = reviews.map((review: any) => ({ run_id: run.id, test_result_id: testResultId.get(Number(review.testId)) || null, test_number: Number(review.testId), score: review.score ?? null, verdict: review.verdict ?? null, root_cause_layer: review.rootCauseLayer ?? null, root_cause_confidence: review.rootCauseConfidence ?? null, is_product_defect: review.isProductDefect ?? false, strengths: review.strengths || [], issues: review.issues || [], recommendations: review.recommendations || [], review_notes: review.reviewNotes || null, raw_review: review }));
+      const reviewRows = reviews.map((review: any) => ({ run_id: run.id, test_result_id: testResultId.get(Number(review.testId)) || null, test_number: Number(review.testId), score: review.score ?? null, verdict: review.verdict ?? null, root_cause_layer: normalizeLayer(review.rootCauseLayer), root_cause_confidence: review.rootCauseConfidence ?? null, is_product_defect: Boolean(review.isProductDefect), strengths: review.strengths || [], issues: review.issues || [], recommendations: review.recommendations || [], review_notes: review.reviewNotes || null, raw_review: review }));
       if (reviewRows.length) { const { error: reviewError } = await store.from("test_ai_reviews").insert(reviewRows); if (reviewError) throw reviewError; }
     }
     await store.from("test_run_jobs").update({ status: "COMPLETED", completed_at: completed.toISOString(), run_id: run.id, error: null }).eq("id", job.id);
