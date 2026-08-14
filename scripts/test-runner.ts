@@ -3,13 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { getTestRunStore, getTestRunnerConfig } from "../lib/testRunStore";
-import { reviewQualitySuite } from "../lib/testAiReviewer";
 
 try {
-  process.loadEnvFile?.(".env.local");
   process.loadEnvFile?.(".env");
+  process.loadEnvFile?.(".env.local");
 } catch {}
 
+const { reviewQualitySuite } = await import("../lib/testAiReviewer");
 const store = getTestRunStore();
 const { baseUrl, runnerId, pollMs } = getTestRunnerConfig();
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "trialiq-quality-"));
@@ -29,22 +29,12 @@ function runId() {
 async function runPlaywright(spec: string, env: NodeJS.ProcessEnv) {
   return new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
     const child = spawn(npxCommand(), ["playwright", "test", spec, "--project=chromium"], {
-      cwd: process.cwd(),
-      env,
-      windowsHide: true,
-      shell: process.platform === "win32",
-      stdio: ["ignore", "pipe", "pipe"],
+      cwd: process.cwd(), env, windowsHide: true, shell: process.platform === "win32", stdio: ["ignore", "pipe", "pipe"],
     });
-
     let stdout = "";
     let stderr = "";
     let settled = false;
-    const finish = (code: number) => {
-      if (settled) return;
-      settled = true;
-      resolve({ code, stdout, stderr });
-    };
-
+    const finish = (code: number) => { if (settled) return; settled = true; resolve({ code, stdout, stderr }); };
     child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
     child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
     child.on("error", (error) => { stderr += `\n[runner spawn error] ${error.message}`; finish(1); });
@@ -86,9 +76,7 @@ async function loadUiEvidence(dir: string, tests: any[]) {
       let screenshotBase64: string | undefined;
       try { screenshotBase64 = (await fs.readFile(path.join(dir, `${id}.jpg`))).toString("base64"); } catch {}
       return { ...test, evidence: { url: metadata.url, visibleText: metadata.visibleText, controls: metadata.controls, screenshotBase64 } };
-    } catch {
-      return test;
-    }
+    } catch { return test; }
   }));
 }
 
@@ -104,15 +92,7 @@ async function processJob(job: any) {
   const resultFile = path.join(jobDir, "suite-result.json");
   await fs.mkdir(evidenceDir, { recursive: true });
 
-  const env: NodeJS.ProcessEnv = {
-    ...process.env,
-    PLAYWRIGHT_BASE_URL: baseUrl,
-    PLAYWRIGHT_HEADLESS: "true",
-    PLAYWRIGHT_REPORT_FILE: reportFile,
-    PLAYWRIGHT_RESULT_FILE: resultFile,
-    PLAYWRIGHT_EVIDENCE_DIR: evidenceDir,
-  };
-
+  const env: NodeJS.ProcessEnv = { ...process.env, PLAYWRIGHT_BASE_URL: baseUrl, PLAYWRIGHT_HEADLESS: "true", PLAYWRIGHT_REPORT_FILE: reportFile, PLAYWRIGHT_RESULT_FILE: resultFile, PLAYWRIGHT_EVIDENCE_DIR: evidenceDir, PLAYWRIGHT_OUTPUT_DIR: path.join(jobDir, "artifacts") };
   let processResult = { code: 1, stdout: "", stderr: "" };
   let playwrightJson: any = null;
   let suiteResult: any = null;
@@ -122,7 +102,6 @@ async function processJob(job: any) {
     processResult = await runPlaywright(spec, env);
     try { playwrightJson = JSON.parse(await fs.readFile(reportFile, "utf8")); } catch {}
     try { suiteResult = JSON.parse(await fs.readFile(resultFile, "utf8")); } catch {}
-
     const tests = flattenPlaywrightTests(playwrightJson);
     const evidenceTests = suiteKey === "ui" ? await loadUiEvidence(evidenceDir, tests) : tests;
     const logs = `${processResult.stdout}${processResult.stderr ? `\n${processResult.stderr}` : ""}`.trim();
@@ -140,75 +119,18 @@ async function processJob(job: any) {
 
     const completed = new Date();
     const runStatus = processResult.code === 0 && total > 0 && failed === 0 ? "PASS" : "FAIL";
-    const { data: run, error: runError } = await store.from("test_runs").insert({
-      job_id: job.id,
-      run_key: id,
-      suite: suiteName,
-      suite_key: suiteKey,
-      started_at: started.toISOString(),
-      completed_at: completed.toISOString(),
-      duration_ms: completed.getTime() - started.getTime(),
-      status: runStatus,
-      total,
-      passed,
-      failed,
-      skipped,
-      flaky,
-      worker_count: 1,
-      browser: "chromium",
-      base_url: baseUrl,
-      git_commit: process.env.GIT_COMMIT || undefined,
-      suite_version: process.env.TEST_SUITE_VERSION || "local-runner",
-      command: `playwright test ${spec} --project=chromium`,
-      raw_console_output: logs,
-      raw_playwright_result: playwrightJson,
-      raw_suite_result: suiteResult,
-      ai_review: aiReview,
-      error: failed ? tests.find((test) => !test.passed)?.errorMessage || logs : processResult.code !== 0 ? logs : null,
-    }).select("id").single();
-
+    const { data: run, error: runError } = await store.from("test_runs").insert({ job_id: job.id, run_key: id, suite: suiteName, suite_key: suiteKey, started_at: started.toISOString(), completed_at: completed.toISOString(), duration_ms: completed.getTime() - started.getTime(), status: runStatus, total, passed, failed, skipped, flaky, worker_count: 1, browser: "chromium", base_url: baseUrl, git_commit: process.env.GIT_COMMIT || undefined, suite_version: process.env.TEST_SUITE_VERSION || "local-runner", command: `playwright test ${spec} --project=chromium`, raw_console_output: logs, raw_playwright_result: playwrightJson, raw_suite_result: suiteResult, ai_review: aiReview, error: failed ? tests.find((test) => !test.passed)?.errorMessage || logs : processResult.code !== 0 ? logs : null }).select("id").single();
     if (runError || !run) throw runError || new Error("Test run was not created.");
 
-    const testRows = tests.map((test) => ({
-      run_id: run.id,
-      test_number: test.testNumber,
-      test_id: test.testId,
-      test_name: test.testName,
-      test_file: test.testFile,
-      status: test.status,
-      duration_ms: test.durationMs,
-      error_message: test.errorMessage || null,
-      error_stack: test.errorStack || null,
-      evidence: evidenceTests.find((item) => item.testNumber === test.testNumber)?.evidence || {},
-      raw_result: test.rawResult,
-    }));
-
+    const testRows = tests.map((test) => ({ run_id: run.id, test_number: test.testNumber, test_id: test.testId, test_name: test.testName, test_file: test.testFile, status: test.status, duration_ms: test.durationMs, error_message: test.errorMessage || null, error_stack: test.errorStack || null, evidence: evidenceTests.find((item) => item.testNumber === test.testNumber)?.evidence || {}, raw_result: test.rawResult }));
     if (testRows.length) {
       const { data: insertedTests, error: testError } = await store.from("test_results").insert(testRows).select("id,test_number");
       if (testError) throw testError;
       const testResultId = new Map((insertedTests || []).map((row) => [row.test_number, row.id]));
       const reviews = Array.isArray(aiReview?.reviews) ? aiReview.reviews : [];
-      const reviewRows = reviews.map((review: any) => ({
-        run_id: run.id,
-        test_result_id: testResultId.get(Number(review.testId)) || null,
-        test_number: Number(review.testId),
-        score: review.score ?? null,
-        verdict: review.verdict ?? null,
-        root_cause_layer: review.rootCauseLayer ?? null,
-        root_cause_confidence: review.rootCauseConfidence ?? null,
-        is_product_defect: review.isProductDefect ?? false,
-        strengths: review.strengths || [],
-        issues: review.issues || [],
-        recommendations: review.recommendations || [],
-        review_notes: review.reviewNotes || null,
-        raw_review: review,
-      }));
-      if (reviewRows.length) {
-        const { error: reviewError } = await store.from("test_ai_reviews").insert(reviewRows);
-        if (reviewError) throw reviewError;
-      }
+      const reviewRows = reviews.map((review: any) => ({ run_id: run.id, test_result_id: testResultId.get(Number(review.testId)) || null, test_number: Number(review.testId), score: review.score ?? null, verdict: review.verdict ?? null, root_cause_layer: review.rootCauseLayer ?? null, root_cause_confidence: review.rootCauseConfidence ?? null, is_product_defect: review.isProductDefect ?? false, strengths: review.strengths || [], issues: review.issues || [], recommendations: review.recommendations || [], review_notes: review.reviewNotes || null, raw_review: review }));
+      if (reviewRows.length) { const { error: reviewError } = await store.from("test_ai_reviews").insert(reviewRows); if (reviewError) throw reviewError; }
     }
-
     await store.from("test_run_jobs").update({ status: "COMPLETED", completed_at: completed.toISOString(), run_id: run.id, error: null }).eq("id", job.id);
     console.log(`[TrialIQ] ${suiteName}: ${runStatus} (${passed}/${total}) · run ${run.id}`);
   } catch (error) {
