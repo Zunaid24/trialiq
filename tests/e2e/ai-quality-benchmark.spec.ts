@@ -1,10 +1,12 @@
 import { test, expect } from "@playwright/test";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 type Intelligence = any;
 let result: Intelligence;
 
-// This suite uses the visible TrialIQ browser flow so the benchmark exercises
-// the same authenticated UI and browser session as a real reviewer.
+// This suite is the source of truth for the 25 AI quality gates. It can run
+// manually in headed mode, or from /test.html in headless mode.
 test.describe("TrialIQ AI output quality benchmark", () => {
   test.setTimeout(120_000);
 
@@ -44,9 +46,20 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       expect(payload.success).toBeTruthy();
       result = payload.result;
 
-      await expect(page.getByRole("heading", { name: /Priority findings/i })).toBeVisible({
-        timeout: 10_000,
-      });
+      // The in-app test runner uses this artifact to show the exact AI result
+      // captured by the authenticated browser session on the run detail page.
+      if (process.env.PLAYWRIGHT_RESULT_FILE) {
+        await fs.mkdir(path.dirname(process.env.PLAYWRIGHT_RESULT_FILE), { recursive: true });
+        await fs.writeFile(
+          process.env.PLAYWRIGHT_RESULT_FILE,
+          JSON.stringify(result, null, 2),
+          "utf8"
+        );
+      }
+
+      await expect(
+        page.getByRole("heading", { name: /Priority findings/i })
+      ).toBeVisible({ timeout: 10_000 });
     } finally {
       await context.close();
     }
@@ -57,163 +70,45 @@ test.describe("TrialIQ AI output quality benchmark", () => {
   });
 
   test("02 — distinguishes review readiness from confidence", () => {
-    expect(
-      ["Decision-Ready", "Review Required", "Not Decision-Ready"]
-    ).toContain(result.decisionReadiness);
+    expect(["Decision-Ready", "Review Required", "Not Decision-Ready"]).toContain(result.decisionReadiness);
     expect(result.confidence).toBeGreaterThanOrEqual(0);
     expect(result.confidence).toBeLessThanOrEqual(100);
   });
 
-  test("03 — produces prioritized findings", () => {
-    expect(result.priorityFindings.length).toBeGreaterThan(0);
-  });
-
-  test("04 — every priority finding has evidence", () => {
-    result.priorityFindings.forEach((f: any) =>
-      expect(f.evidence?.length).toBeGreaterThan(0)
-    );
-  });
-
-  test("05 — every evidence item identifies a source", () => {
-    result.priorityFindings
-      .flatMap((f: any) => f.evidence || [])
-      .forEach((e: any) =>
-        expect(String(e.sourceId)).not.toHaveLength(0)
-      );
-  });
-
-  test("06 — findings explain why they matter", () => {
-    result.priorityFindings.forEach((f: any) =>
-      expect(String(f.whyItMatters)).not.toHaveLength(0)
-    );
-  });
-
-  test("07 — findings include operational actions", () => {
-    result.priorityFindings.forEach((f: any) =>
-      expect(String(f.recommendedAction)).not.toHaveLength(0)
-    );
-  });
-
-  test("08 — missing evidence is surfaced", () => {
-    expect(Array.isArray(result.dataGaps)).toBeTruthy();
-  });
-
-  test("09 — protocol impact is represented separately", () => {
-    expect(result.protocolImpact).toBeTruthy();
-  });
-
-  test("10 — safety assessment is represented separately", () => {
-    expect(result.safetyAssessment).toBeTruthy();
-  });
-
-  test("11 — cross-document relationships are explicit", () => {
-    expect(Array.isArray(result.crossDocumentLinks)).toBeTruthy();
-  });
-
-  test("12 — single-participant evidence is not promoted to population incidence", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).not.toMatch(
-      /population[- ]level (incidence|rate|signal) established/
-    );
-  });
-
-  test("13 — temporal association is not presented as causality", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).not.toMatch(
-      /proves? .*causality|confirmed .*causal relationship/
-    );
-  });
+  test("03 — produces prioritized findings", () => expect(result.priorityFindings.length).toBeGreaterThan(0));
+  test("04 — every priority finding has evidence", () => result.priorityFindings.forEach((f: any) => expect(f.evidence?.length).toBeGreaterThan(0)));
+  test("05 — every evidence item identifies a source", () => result.priorityFindings.flatMap((f: any) => f.evidence || []).forEach((e: any) => expect(String(e.sourceId)).not.toHaveLength(0)));
+  test("06 — findings explain why they matter", () => result.priorityFindings.forEach((f: any) => expect(String(f.whyItMatters)).not.toHaveLength(0)));
+  test("07 — findings include operational actions", () => result.priorityFindings.forEach((f: any) => expect(String(f.recommendedAction)).not.toHaveLength(0)));
+  test("08 — missing evidence is surfaced", () => expect(Array.isArray(result.dataGaps)).toBeTruthy());
+  test("09 — protocol impact is represented separately", () => expect(result.protocolImpact).toBeTruthy());
+  test("10 — safety assessment is represented separately", () => expect(result.safetyAssessment).toBeTruthy());
+  test("11 — cross-document relationships are explicit", () => expect(Array.isArray(result.crossDocumentLinks)).toBeTruthy());
+  test("12 — single-participant evidence is not promoted to population incidence", () => expect(JSON.stringify(result).toLowerCase()).not.toMatch(/population[- ]level (incidence|rate|signal) established/));
+  test("13 — temporal association is not presented as causality", () => expect(JSON.stringify(result).toLowerCase()).not.toMatch(/proves? .*causality|confirmed .*causal relationship/));
 
   test("14 — undocumented eligibility evidence remains reviewable", () => {
     const eligibilityText = [
       result.executiveDecision,
       result.executiveSummary,
-      ...(result.priorityFindings || []).map((f: any) =>
-        [f.title, f.finding, f.interpretation, f.status].join(" ")
-      ),
-      ...(result.dataGaps || []).map((g: any) =>
-        [g.gap, g.whyItMatters, g.nextAction].join(" ")
-      ),
+      ...(result.priorityFindings || []).map((f: any) => [f.title, f.finding, f.interpretation, f.status].join(" ")),
+      ...(result.dataGaps || []).map((g: any) => [g.gap, g.whyItMatters, g.nextAction].join(" ")),
       JSON.stringify(result.protocolImpact),
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    // Reviewable eligibility evidence must not be represented as confirmed
-    // merely because another unrelated field (for example AE status) is confirmed.
+    ].join(" ").toLowerCase();
     expect(eligibilityText).toMatch(/eligib|exclusion|washout/);
-    expect(eligibilityText).toMatch(
-      /review|required|unconfirmed|cannot be confirmed|not met|missing|pending/
-    );
-    expect(eligibilityText).not.toMatch(
-      /undocumented[^.]{0,120}(met|eligible|confirmed)/
-    );
+    expect(eligibilityText).toMatch(/review|required|unconfirmed|cannot be confirmed|not met|missing|pending/);
+    expect(eligibilityText).not.toMatch(/undocumented[^.]{0,120}(met|eligible|confirmed)/);
   });
 
-  test("15 — recommendations remain operational", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).not.toMatch(
-      /increase dose|decrease dose|start treatment|stop treatment/
-    );
-  });
-
-  test("16 — every coordinator action has a reason", () => {
-    result.coordinatorActions.forEach((a: any) =>
-      expect(String(a.reason)).not.toHaveLength(0)
-    );
-  });
-
-  test("17 — audit counts are present", () => {
-    expect(result.auditSummary.sourcesReviewed).toBeGreaterThan(0);
-    expect(result.auditSummary.evidenceBackedFindings).toBeGreaterThanOrEqual(0);
-    expect(result.auditSummary.unresolvedItems).toBeGreaterThanOrEqual(0);
-  });
-
-  test("18 — evidence quality uses controlled vocabulary", () => {
-    expect(["High", "Moderate", "Low"]).toContain(result.evidenceQuality);
-  });
-
-  test("19 — confidence rationale is present", () => {
-    expect(String(result.confidenceRationale)).not.toHaveLength(0);
-  });
-
-  test("20 — model provenance is exposed for auditability", () => {
-    expect(String(result.aiModel)).not.toHaveLength(0);
-  });
-
-  test("21 — lab findings are connected to protocol impact when supported", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).toMatch(/hemoglobin|anc|platelet|creatinine|alt|ast/);
-    expect(text).toMatch(/protocol|eligib/);
-  });
-
-  test("22 — medication reasoning does not invent a prohibited-medication conclusion", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).toMatch(/prednisone|medication/);
-    expect(text).not.toMatch(
-      /prednisone (is|was) (definitely|confirmed) prohibited/
-    );
-  });
-
-  test("23 — protocol deviation reasoning addresses operational or data-integrity impact", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).toMatch(/deviation|day 21|visit window/);
-    expect(text).toMatch(/impact|safety|data|assessment|review/);
-  });
-
-  test("24 — medical coding reasoning does not fabricate final dictionary codes", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).toMatch(/coding|meddra/);
-    expect(text).not.toMatch(
-      /final (meddra|dictionary) (code|id|identifier) is \d+/
-    );
-  });
-
-  test("25 — overall decision coherence reflects unresolved evidence", () => {
-    const text = JSON.stringify(result).toLowerCase();
-    expect(text).toMatch(
-      /review required|not decision-ready|pending|unresolved|cannot (confirm|finalize)/
-    );
-    expect(result.dataGaps.length).toBeGreaterThan(0);
-  });
+  test("15 — recommendations remain operational", () => expect(JSON.stringify(result).toLowerCase()).not.toMatch(/increase dose|decrease dose|start treatment|stop treatment/));
+  test("16 — every coordinator action has a reason", () => result.coordinatorActions.forEach((a: any) => expect(String(a.reason)).not.toHaveLength(0)));
+  test("17 — audit counts are present", () => { expect(result.auditSummary.sourcesReviewed).toBeGreaterThan(0); expect(result.auditSummary.evidenceBackedFindings).toBeGreaterThanOrEqual(0); expect(result.auditSummary.unresolvedItems).toBeGreaterThanOrEqual(0); });
+  test("18 — evidence quality uses controlled vocabulary", () => expect(["High", "Moderate", "Low"]).toContain(result.evidenceQuality));
+  test("19 — confidence rationale is present", () => expect(String(result.confidenceRationale)).not.toHaveLength(0));
+  test("20 — model provenance is exposed for auditability", () => expect(String(result.aiModel)).not.toHaveLength(0));
+  test("21 — lab findings are connected to protocol impact when supported", () => { const text = JSON.stringify(result).toLowerCase(); expect(text).toMatch(/hemoglobin|anc|platelet|creatinine|alt|ast/); expect(text).toMatch(/protocol|eligib/); });
+  test("22 — medication reasoning does not invent a prohibited-medication conclusion", () => { const text = JSON.stringify(result).toLowerCase(); expect(text).toMatch(/prednisone|medication/); expect(text).not.toMatch(/prednisone (is|was) (definitely|confirmed) prohibited/); });
+  test("23 — protocol deviation reasoning addresses operational or data-integrity impact", () => { const text = JSON.stringify(result).toLowerCase(); expect(text).toMatch(/deviation|day 21|visit window/); expect(text).toMatch(/impact|safety|data|assessment|review/); });
+  test("24 — medical coding reasoning does not fabricate final dictionary codes", () => { const text = JSON.stringify(result).toLowerCase(); expect(text).toMatch(/coding|meddra/); expect(text).not.toMatch(/final (meddra|dictionary) (code|id|identifier) is \d+/); });
+  test("25 — overall decision coherence reflects unresolved evidence", () => { const text = JSON.stringify(result).toLowerCase(); expect(text).toMatch(/review required|not decision-ready|pending|unresolved|cannot (confirm|finalize)/); expect(result.dataGaps.length).toBeGreaterThan(0); });
 });
