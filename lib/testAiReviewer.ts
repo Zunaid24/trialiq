@@ -1,15 +1,22 @@
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const MODELS = [
-  process.env.TEST_REVIEW_MODEL,
-  "gemini-2.5-flash-lite",
-  "gemini-2.5-flash",
+
+// Keep the reviewer on currently supported Gemini 3 models. Gemini 2.5 Flash-Lite
+// is no longer available to new users, so it must not be a fallback.
+const CURRENT_MODELS = [
+  "gemini-3.6-flash",
   "gemini-3.5-flash-lite",
   "gemini-3.5-flash",
-  "gemini-3.6-flash",
-].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index);
-const PRIMARY_MODEL = MODELS[0] || "gemini-2.5-flash-lite";
+  "gemini-3.1-flash-lite",
+];
+
+const configuredModel = process.env.TEST_REVIEW_MODEL?.trim();
+const MODELS = [configuredModel, ...CURRENT_MODELS].filter(
+  (value, index, values): value is string =>
+    Boolean(value) && values.indexOf(value) === index,
+);
+const PRIMARY_MODEL = MODELS[0] || CURRENT_MODELS[0];
 
 type ReviewInput = {
   suite: string;
@@ -51,6 +58,12 @@ function isQuotaError(error: unknown) {
   const message = getErrorMessage(error).toLowerCase();
   const code = getErrorCode(error);
   return code === 429 || code === "429" || code === "resource_exhausted" || code === "RESOURCE_EXHAUSTED" || message.includes("resource_exhausted") || message.includes("quota exceeded") || message.includes("too many requests") || message.includes("generate_content_free_tier_requests");
+}
+
+function isModelUnavailableError(error: unknown) {
+  const message = getErrorMessage(error).toLowerCase();
+  const code = getErrorCode(error);
+  return code === 404 || code === "404" || code === "not_found" || code === "NOT_FOUND" || message.includes("model is no longer available") || message.includes("model not found") || message.includes("is not found") || message.includes("not available to new users") || message.includes("unsupported model");
 }
 
 function getRetryAfterSeconds(error: unknown) {
@@ -130,6 +143,7 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
   }
 
   const quotaErrors: unknown[] = [];
+  const unavailableModels: string[] = [];
   let lastError: unknown = null;
 
   for (const model of MODELS) {
@@ -137,15 +151,27 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
       const response = await ai.models.generateContent({
         model,
         contents: [{ role: "user", parts }],
-        config: { responseMimeType: "application/json", temperature: 0.1 },
+        // Gemini 3.x deprecated temperature/top_p/top_k. Keep the request minimal
+        // so the reviewer remains compatible with current stable Gemini models.
+        config: { responseMimeType: "application/json" },
       });
 
       const parsed = extractJson(response.text ?? "");
-      return { ...parsed, status: "COMPLETE", model, fallbackUsed: model !== PRIMARY_MODEL };
+      return {
+        ...parsed,
+        status: "COMPLETE",
+        model,
+        fallbackUsed: model !== PRIMARY_MODEL,
+        attemptedModels: [...quotaErrors.map(() => "quota-limited"), ...unavailableModels, model],
+      };
     } catch (error) {
       lastError = error;
       if (isQuotaError(error)) {
         quotaErrors.push(error);
+        continue;
+      }
+      if (isModelUnavailableError(error)) {
+        unavailableModels.push(model);
         continue;
       }
       return {
@@ -154,7 +180,8 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
         overallScore: null,
         reviews: [],
         error: getErrorMessage(error),
-        overallSummary: "The automated test suite completed, but the AI review layer encountered a non-quota provider error. The automated test results remain authoritative.",
+        attemptedModels: MODELS,
+        overallSummary: "The automated test suite completed, but the AI review layer encountered a non-recoverable provider error. The automated test results remain authoritative.",
       };
     }
   }
@@ -177,9 +204,11 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
   return {
     status: "ERROR",
     model: PRIMARY_MODEL,
+    attemptedModels: MODELS,
+    unavailableModels,
     overallScore: null,
     reviews: [],
     error: getErrorMessage(lastError),
-    overallSummary: "The automated test suite completed, but the AI review layer could not complete.",
+    overallSummary: "The automated test suite completed, but none of the configured Gemini review models was available. Check the model configuration and provider quota.",
   };
 }
