@@ -24,6 +24,23 @@ function extractJson(text: string) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+function isQuotaError(error: unknown) {
+  const value = error as any;
+  const message = getErrorMessage(error).toLowerCase();
+  return value?.status === 429 || value?.code === 429 || message.includes("resource_exhausted") || message.includes("quota exceeded") || message.includes("too many requests");
+}
+
+function getRetryAfterSeconds(error: unknown) {
+  const message = getErrorMessage(error);
+  const match = message.match(/retry(?:delay| in)?[^0-9]{0,20}(\d+(?:\.\d+)?)\s*s/i);
+  return match ? Math.ceil(Number(match[1])) : null;
+}
+
 export async function reviewQualitySuite(input: ReviewInput) {
   if (!process.env.GEMINI_API_KEY) return { status: "SKIPPED", reason: "GEMINI_API_KEY is not configured for the AI review layer.", model: MODEL, overallScore: null, reviews: [] };
 
@@ -63,12 +80,29 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
     parts.push({ inlineData: { mimeType: "image/jpeg", data: test.evidence.screenshotBase64 } });
   }
 
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [{ role: "user", parts }],
-    config: { responseMimeType: "application/json", temperature: 0.1 },
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: [{ role: "user", parts }],
+      config: { responseMimeType: "application/json", temperature: 0.1 },
+    });
 
-  const parsed = extractJson(response.text ?? "");
-  return { ...parsed, status: "COMPLETE", model: MODEL };
+    const parsed = extractJson(response.text ?? "");
+    return { ...parsed, status: "COMPLETE", model: MODEL };
+  } catch (error) {
+    if (isQuotaError(error)) {
+      const retryAfterSeconds = getRetryAfterSeconds(error);
+      return {
+        status: "QUOTA_LIMITED",
+        model: MODEL,
+        overallScore: null,
+        reviews: [],
+        error: getErrorMessage(error),
+        retryAfterSeconds,
+        overallSummary: "The automated suite completed, but the AI review layer could not run because the model quota is currently exhausted.",
+      };
+    }
+
+    throw error;
+  }
 }
