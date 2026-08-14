@@ -5,8 +5,8 @@ import path from "node:path";
 type Intelligence = any;
 let result: Intelligence;
 
-// This suite is the source of truth for the 25 AI quality gates. It can run
-// manually in headed mode, or from /test.html in headless mode.
+// This suite is the source of truth for the automated AI quality gates. It can
+// run manually in headed mode, or from /test.html in headless mode.
 test.describe("TrialIQ AI output quality benchmark", () => {
   test.setTimeout(120_000);
 
@@ -46,8 +46,6 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       expect(payload.success).toBeTruthy();
       result = payload.result;
 
-      // The in-app test runner uses this artifact to show the exact AI result
-      // captured by the authenticated browser session on the run detail page.
       if (process.env.PLAYWRIGHT_RESULT_FILE) {
         await fs.mkdir(path.dirname(process.env.PLAYWRIGHT_RESULT_FILE), { recursive: true });
         await fs.writeFile(
@@ -111,4 +109,60 @@ test.describe("TrialIQ AI output quality benchmark", () => {
   test("23 — protocol deviation reasoning addresses operational or data-integrity impact", () => { const text = JSON.stringify(result).toLowerCase(); expect(text).toMatch(/deviation|day 21|visit window/); expect(text).toMatch(/impact|safety|data|assessment|review/); });
   test("24 — medical coding reasoning does not fabricate final dictionary codes", () => { const text = JSON.stringify(result).toLowerCase(); expect(text).toMatch(/coding|meddra/); expect(text).not.toMatch(/final (meddra|dictionary) (code|id|identifier) is \d+/); });
   test("25 — overall decision coherence reflects unresolved evidence", () => { const text = JSON.stringify(result).toLowerCase(); expect(text).toMatch(/review required|not decision-ready|pending|unresolved|cannot (confirm|finalize)/); expect(result.dataGaps.length).toBeGreaterThan(0); });
+
+  // Scenario-quality gates. These deliberately stay output-focused; UI, role,
+  // workflow and persistence behavior are covered by later test-suite phases.
+  test("26 — evidence lineage survives into the decision narrative", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    const sourceIds = (result.priorityFindings || []).flatMap((f: any) => f.evidence || []).map((e: any) => String(e.sourceId).toLowerCase()).filter(Boolean);
+    expect(sourceIds.length).toBeGreaterThan(0);
+    expect(sourceIds.some((id: string) => text.includes(id))).toBeTruthy();
+  });
+
+  test("27 — unsupported claims are suppressed when source evidence is incomplete", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).not.toMatch(/definitively eligible|definitively caused|proves? the event was caused|confirmed prohibited medication/);
+  });
+
+  test("28 — unresolved evidence creates an actionable review step", () => {
+    const actions = [
+      ...(result.priorityFindings || []).map((f: any) => f.recommendedAction),
+      ...(result.dataGaps || []).map((g: any) => g.nextAction),
+      ...(result.coordinatorActions || []).map((a: any) => a.action),
+    ].map(String).join(" ").toLowerCase();
+    expect(actions.length).toBeGreaterThan(20);
+    expect(actions).toMatch(/review|confirm|verify|assess|check|document|obtain|repeat|reconcile/);
+  });
+
+  test("29 — why-it-matters statements are specific enough for reviewer triage", () => {
+    const reasons = (result.priorityFindings || []).map((f: any) => String(f.whyItMatters || "").trim());
+    expect(reasons.length).toBeGreaterThan(0);
+    expect(reasons.every((reason: string) => reason.length >= 20)).toBeTruthy();
+  });
+
+  test("30 — longitudinal context is preserved across dates and visit timing", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).toMatch(/05-aug|aug-2026|day 15|day 21|visit window|01-aug/);
+    expect(text).toMatch(/temporal|timeline|after|before|window|date|day/);
+  });
+
+  test("31 — contradiction and uncertainty are represented rather than silently resolved", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).toMatch(/not documented|not provided|uncertain|unclear|cannot confirm|pending|requires review|missing/);
+  });
+
+  test("32 — sparse or incomplete source evidence does not produce definitive clinical treatment instructions", () => {
+    const text = JSON.stringify(result).toLowerCase();
+    expect(text).not.toMatch(/increase dose|decrease dose|start treatment|stop treatment|definitive diagnosis|confirmed causal relationship/);
+    expect(text).toMatch(/review|assessment|evidence|uncertain|pending|confirm/);
+  });
+
+  test("33 — the output preserves the required evidence-to-decision chain", () => {
+    expect(result.priorityFindings?.length).toBeGreaterThan(0);
+    expect(result.dataGaps?.length).toBeGreaterThan(0);
+    expect(String(result.executiveDecision)).not.toHaveLength(0);
+    expect(String(result.decisionReadiness)).not.toHaveLength(0);
+    expect((result.priorityFindings || []).every((f: any) => String(f.whyItMatters || "").length > 0)).toBeTruthy();
+    expect((result.priorityFindings || []).every((f: any) => String(f.recommendedAction || "").length > 0)).toBeTruthy();
+  });
 });
