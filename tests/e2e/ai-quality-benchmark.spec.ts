@@ -28,7 +28,10 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       await page.getByLabel(/email/i).fill(email);
       await page.getByLabel(/password/i).fill(password);
       await page.getByRole("button", { name: /sign in/i }).click();
-      await expect(page).toHaveURL(/\/dashboard/);
+
+      // The auth flow can take longer than the default 5s assertion timeout
+      // when the local Next.js/Supabase stack is warming up.
+      await page.waitForURL(/\/dashboard/, { timeout: 15_000 });
 
       const sourceResponse = await context.request.get(
         "/demo/clinical-intelligence-evidence.json"
