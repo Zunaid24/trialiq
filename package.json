@@ -10,7 +10,8 @@
     "test:e2e": "playwright test",
     "test:smoke": "playwright test tests/e2e/smoke.spec.ts --project=chromium",
     "test:ui": "playwright test tests/e2e/ui-quality.spec.ts --project=chromium",
-    "test:ai": "node scripts/run-ai-quality.mjs"
+    "test:ai": "node scripts/run-ai-quality.mjs",
+    "test:runner": "tsx scripts/test-runner.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -39,6 +40,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }
