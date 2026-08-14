@@ -2,13 +2,11 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-// Prefer stable, lightweight models first. Gemini rate limits are applied per
-// project and vary by model, so a model-specific fallback can keep the local
-// QA harness running when one model is temporarily exhausted.
+// Current stable Gemini models. Keep the cheapest high-throughput model first,
+// then fall back to stronger stable models when a model is unavailable or quota-limited.
 const MODELS = [
-  "gemini-2.5-flash-lite",
-  "gemini-2.5-flash",
   "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
   "gemini-3.5-flash",
   "gemini-3.6-flash",
 ] as const;
@@ -119,6 +117,13 @@ function enforcePopulationInferenceGuardrail(result: any) {
       };
 }
 
+function isRetryableModelError(error: unknown) {
+  const value = error as any;
+  const message = error instanceof Error ? error.message : String(error);
+  const status = value?.status ?? value?.code ?? value?.error?.status ?? value?.error?.code;
+  return status === 404 || status === "404" || status === 429 || status === "429" || status === "RESOURCE_EXHAUSTED" || /not found|no longer available|quota exceeded|resource_exhausted|too many requests/i.test(message);
+}
+
 export async function analyzeClinicalIntelligence(evidencePack: unknown) {
   const prompt = `
 Build an executive Clinical Intelligence assessment for the supplied study evidence.
@@ -177,7 +182,12 @@ EVIDENCE PACK:\n${JSON.stringify(evidencePack, null, 2)}`;
   let lastError: unknown;
   for (const model of MODELS) {
     try {
-      const response = await ai.models.generateContent({ model, contents: `${SYSTEM}\n${prompt}`, config: { responseMimeType: "application/json", temperature: 0.1 } });
+      // Gemini 3.x deprecated sampling parameters such as temperature.
+      const response = await ai.models.generateContent({
+        model,
+        contents: `${SYSTEM}\n${prompt}`,
+        config: { responseMimeType: "application/json" },
+      });
       const result = parseJson(response.text ?? "");
       if (result && typeof result === "object") {
         enforcePopulationInferenceGuardrail(result);
@@ -185,7 +195,12 @@ EVIDENCE PACK:\n${JSON.stringify(evidencePack, null, 2)}`;
         result.aiFallbackUsed = model !== MODELS[0];
       }
       return result;
-    } catch (error) { lastError = error; }
+    } catch (error) {
+      lastError = error;
+      if (isRetryableModelError(error)) continue;
+      continue;
+    }
   }
+
   throw lastError ?? new Error("Clinical intelligence analysis failed.");
 }
