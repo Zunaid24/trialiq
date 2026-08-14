@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Activity, ArrowRight, CheckCircle2, Clock3, FlaskConical, History, Loader2, Play, ShieldCheck, XCircle } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle2, Clock3, FlaskConical, History, Loader2, Play, ShieldCheck, TrendingDown, TrendingUp, XCircle } from "lucide-react";
 
 type HistoryItem = {
   id: string;
@@ -19,8 +19,14 @@ type HistoryItem = {
 function formatDate(value: string) {
   return new Date(value).toLocaleString([], { dateStyle: "medium", timeStyle: "medium" });
 }
+function shortDate(value: string) {
+  return new Date(value).toLocaleDateString([], { month: "short", day: "numeric" });
+}
 function duration(ms: number) {
   return `${(ms / 1000).toFixed(1)}s`;
+}
+function score(run: HistoryItem) {
+  return run.total ? Math.round((run.passed / run.total) * 100) : 0;
 }
 
 export default function TestSuitePage() {
@@ -43,14 +49,10 @@ export default function TestSuitePage() {
     try {
       const response = await fetch("/api/test-suite/run", { method: "POST" });
       const payload = await response.json();
-
-      // A benchmark failure is still a valid run. Always open its timestamped
-      // result page so the user can inspect the failure and logs.
       if (payload?.report?.id) {
         window.location.href = `/test.html/run/${payload.report.id}`;
         return;
       }
-
       throw new Error(payload?.error || "Unable to start benchmark.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to start benchmark.");
@@ -61,7 +63,14 @@ export default function TestSuitePage() {
   }
 
   const latest = history[0];
-  const best = useMemo(() => history.reduce((max, run) => Math.max(max, run.total ? (run.passed / run.total) * 100 : 0), 0), [history]);
+  const previous = history[1];
+  const best = useMemo(() => history.reduce((max, run) => Math.max(max, score(run)), 0), [history]);
+  const average = useMemo(() => history.length ? Math.round(history.reduce((sum, run) => sum + score(run), 0) / history.length) : 0, [history]);
+  const avgDuration = useMemo(() => history.length ? Math.round(history.reduce((sum, run) => sum + run.durationMs, 0) / history.length) : 0, [history]);
+  const latestScore = latest ? score(latest) : 0;
+  const previousScore = previous ? score(previous) : latestScore;
+  const delta = latest ? latestScore - previousScore : 0;
+  const trendRuns = [...history].slice(0, 12).reverse();
 
   return (
     <main className="min-h-screen bg-[#f7f8fa] text-slate-950">
@@ -81,13 +90,32 @@ export default function TestSuitePage() {
         {running && <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5"><div className="flex items-center gap-3"><Loader2 className="animate-spin text-blue-700" size={19}/><div><p className="font-bold text-blue-950">Benchmark running</p><p className="mt-1 text-sm text-blue-800">Clinical Intelligence is being evaluated across all 25 gates. The browser runs headlessly; no Chrome window will open.</p></div></div></div>}
         {error && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><strong>Could not start the benchmark.</strong> {error}</div>}
 
-        <section className="mt-8 grid gap-4 md:grid-cols-3">
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Stat icon={<Activity size={17}/>} label="Latest result" value={latest ? `${latest.passed}/${latest.total}` : "—"} detail={latest ? latest.status : "No runs yet"} />
-          <Stat icon={<ShieldCheck size={17}/>} label="Best pass rate" value={history.length ? `${best.toFixed(0)}%` : "—"} detail={`${history.length} recorded run${history.length === 1 ? "" : "s"}`} />
-          <Stat icon={<Clock3 size={17}/>} label="Latest duration" value={latest ? duration(latest.durationMs) : "—"} detail={latest ? formatDate(latest.completedAt) : "Awaiting first run"} />
+          <Stat icon={<ShieldCheck size={17}/>} label="Best pass rate" value={history.length ? `${best}%` : "—"} detail={`${history.length} recorded run${history.length === 1 ? "" : "s"}`} />
+          <Stat icon={<TrendingUp size={17}/>} label="Average score" value={history.length ? `${average}%` : "—"} detail={history.length ? `Across ${history.length} run${history.length === 1 ? "" : "s"}` : "Awaiting first run"} />
+          <Stat icon={<Clock3 size={17}/>} label="Avg duration" value={history.length ? duration(avgDuration) : "—"} detail={latest ? formatDate(latest.completedAt) : "Awaiting first run"} />
         </section>
 
-        <section className="mt-10 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {latest && history.length > 1 && <section className={`mt-6 rounded-2xl border p-5 ${delta < 0 ? "border-red-200 bg-red-50" : delta > 0 ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+          <div className="flex items-start gap-3">
+            {delta < 0 ? <TrendingDown className="mt-0.5 text-red-700" size={19}/> : <TrendingUp className={`mt-0.5 ${delta > 0 ? "text-emerald-700" : "text-slate-500"}`} size={19}/>} 
+            <div><p className={`font-bold ${delta < 0 ? "text-red-950" : delta > 0 ? "text-emerald-950" : "text-slate-900"}`}>{delta < 0 ? "Regression detected" : delta > 0 ? "Quality improved" : "No score change"}</p><p className="mt-1 text-sm text-slate-600">Latest score <strong>{latestScore}%</strong> vs previous <strong>{previousScore}%</strong> ({delta > 0 ? "+" : ""}{delta} percentage points).</p></div>
+          </div>
+        </section>}
+
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2"><Activity size={17} className="text-blue-700"/><h2 className="font-bold">Quality trend</h2></div><p className="mt-1 text-sm text-slate-500">The last 12 benchmark sessions, oldest to newest.</p></div><span className="text-xs font-semibold text-slate-400">100% = 25/25</span></div>
+          {trendRuns.length === 0 ? <div className="mt-8 rounded-xl bg-slate-50 px-4 py-12 text-center text-sm text-slate-500">Run the first benchmark to establish the baseline.</div> : <div className="mt-8 overflow-x-auto"><div className="flex min-w-[620px] items-end gap-3" style={{ height: 230 }}>
+            {trendRuns.map((run) => { const value = score(run); return <Link key={run.id} href={`/test.html/run/${run.id}`} className="group flex h-full min-w-[42px] flex-1 flex-col justify-end gap-2 text-center" title={`${value}% — ${formatDate(run.startedAt)}`}>
+              <span className="text-xs font-bold text-slate-500">{value}%</span>
+              <div className={`mx-auto w-full max-w-12 rounded-t-lg transition group-hover:opacity-80 ${run.status === "PASS" ? "bg-emerald-500" : "bg-red-400"}`} style={{ height: `${Math.max(value, 4) * 1.7}px` }} />
+              <span className="truncate text-[10px] font-medium text-slate-400">{shortDate(run.startedAt)}</span>
+            </Link>; })}
+          </div></div>}
+        </section>
+
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><div><div className="flex items-center gap-2"><History size={17} className="text-blue-700"/><h2 className="font-bold">Test history</h2></div><p className="mt-1 text-sm text-slate-500">Every session gets its own result page and timestamp.</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">25 gates / run</span></div>
           {history.length === 0 ? <div className="px-6 py-14 text-center text-sm text-slate-500">No benchmark sessions yet. Start the first test above.</div> : <div className="divide-y divide-slate-100">
             {history.map((run) => <Link key={run.id} href={`/test.html/run/${run.id}`} className="group flex flex-col gap-4 px-6 py-5 transition hover:bg-slate-50 md:flex-row md:items-center md:justify-between">
