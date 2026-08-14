@@ -1,9 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 const email = process.env.PLAYWRIGHT_EMAIL;
 const password = process.env.PLAYWRIGHT_PASSWORD;
 
-async function signIn(page: Parameters<typeof test>[0] extends never ? never : any) {
+async function signIn(page: Page) {
   if (!email || !password) {
     throw new Error("PLAYWRIGHT_EMAIL and PLAYWRIGHT_PASSWORD must be configured for authenticated UI tests.");
   }
