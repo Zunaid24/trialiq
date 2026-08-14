@@ -43,8 +43,6 @@ async function runPlaywright(args: string[], env: NodeJS.ProcessEnv) {
       cwd: process.cwd(),
       env,
       windowsHide: true,
-      // Windows resolves npx.cmd much more reliably through the shell when
-      // Playwright is launched from a Next.js server process.
       shell: process.platform === "win32",
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -67,8 +65,6 @@ async function runPlaywright(args: string[], env: NodeJS.ProcessEnv) {
     });
     child.on("close", (code) => finish(code ?? 1));
 
-    // Keep the HTTP request bounded while allowing the benchmark's own
-    // 120-second Playwright timeout to finish normally.
     setTimeout(() => {
       if (!settled) {
         stderr += "\n[runner timeout] Playwright runner exceeded 170 seconds.";
@@ -119,20 +115,21 @@ export async function POST(request: NextRequest) {
     try { aiResult = JSON.parse(await fs.readFile(resultFile, "utf8")); } catch {}
 
     const tests = flattenPlaywrightTests(playwrightJson);
-    const total = 25;
+    const total = tests.length || Number(playwrightJson?.stats?.expected || 0) + Number(playwrightJson?.stats?.unexpected || 0) + Number(playwrightJson?.stats?.skipped || 0) + Number(playwrightJson?.stats?.flaky || 0);
     const passed = tests.filter((test) => test.passed).length;
-    const failed = total - passed;
+    const failed = Math.max(total - passed, 0);
     const logs = `${processResult.stdout}${processResult.stderr ? `\n${processResult.stderr}` : ""}`.trim();
-    const error = processResult.code === 0 && passed === total
+    const error = processResult.code === 0 && total > 0 && passed === total
       ? undefined
       : tests.find((test) => !test.passed)?.error || logs || `Playwright exited with code ${processResult.code}`;
 
     const report = {
       id,
+      suite: "AI Quality Benchmark",
       startedAt: started.toISOString(),
       completedAt: completed.toISOString(),
       durationMs: completed.getTime() - started.getTime(),
-      status: processResult.code === 0 && passed === total ? "PASS" : "FAIL",
+      status: processResult.code === 0 && total > 0 && passed === total ? "PASS" : "FAIL",
       total,
       passed,
       failed,
@@ -146,21 +143,20 @@ export async function POST(request: NextRequest) {
     await fs.writeFile(logPath, logs, "utf8");
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2), "utf8");
 
-    // Always return the run report so the UI can open the timestamped result
-    // page even when Playwright itself fails to launch or a gate fails.
     return NextResponse.json({ ok: report.status === "PASS", report });
   } catch (error) {
     const completed = new Date();
     const message = error instanceof Error ? error.message : String(error);
     const report = {
       id,
+      suite: "AI Quality Benchmark",
       startedAt: started.toISOString(),
       completedAt: completed.toISOString(),
       durationMs: completed.getTime() - started.getTime(),
       status: "FAIL",
-      total: 25,
+      total: 0,
       passed: 0,
-      failed: 25,
+      failed: 0,
       result: null,
       tests: [],
       error: message,
@@ -171,7 +167,6 @@ export async function POST(request: NextRequest) {
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2), "utf8").catch(() => undefined);
     await fs.writeFile(logPath, message, "utf8").catch(() => undefined);
 
-    // A benchmark failure is a test result, not a broken dashboard request.
     return NextResponse.json({ ok: false, report });
   }
 }
