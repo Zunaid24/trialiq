@@ -26,19 +26,35 @@ function extractJson(text: string) {
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
-  return String(error);
+  try { return JSON.stringify(error); } catch { return String(error); }
+}
+
+function getErrorCode(error: unknown) {
+  const value = error as any;
+  return value?.status ?? value?.code ?? value?.error?.status ?? value?.error?.code ?? value?.details?.code ?? value?.cause?.code ?? null;
 }
 
 function isQuotaError(error: unknown) {
-  const value = error as any;
   const message = getErrorMessage(error).toLowerCase();
-  return value?.status === 429 || value?.code === 429 || message.includes("resource_exhausted") || message.includes("quota exceeded") || message.includes("too many requests");
+  const code = getErrorCode(error);
+  return code === 429 || code === "429" || code === "resource_exhausted" || code === "RESOURCE_EXHAUSTED" || message.includes("resource_exhausted") || message.includes("quota exceeded") || message.includes("too many requests") || message.includes("generate_content_free_tier_requests");
 }
 
 function getRetryAfterSeconds(error: unknown) {
   const message = getErrorMessage(error);
-  const match = message.match(/retry(?:delay| in)?[^0-9]{0,20}(\d+(?:\.\d+)?)\s*s/i);
-  return match ? Math.ceil(Number(match[1])) : null;
+  const retryMatch = message.match(/retry(?:delay|\s+in)?[^0-9]{0,30}(\d+(?:\.\d+)?)\s*s/i);
+  if (retryMatch) return Math.ceil(Number(retryMatch[1]));
+  const detailMatch = message.match(/retryDelay[^0-9]{0,20}(\d+(?:\.\d+)?)\s*s/i);
+  return detailMatch ? Math.ceil(Number(detailMatch[1])) : null;
+}
+
+function quotaSummary(error: unknown, retryAfterSeconds: number | null) {
+  const value = error as any;
+  const quotaModel = value?.error?.details?.find?.((detail: any) => detail?.quotaFailure)?.quotaFailure?.violations?.[0]?.quotaDimensions?.model;
+  const model = quotaModel || MODEL;
+  return retryAfterSeconds
+    ? `Gemini quota is exhausted for ${model}. The automated tests completed; AI review was skipped. Retry after approximately ${retryAfterSeconds}s or use a model/project with available quota.`
+    : `Gemini quota is exhausted for ${model}. The automated tests completed; AI review was skipped. Increase quota, wait for the provider reset, or configure another review model.`;
 }
 
 export async function reviewQualitySuite(input: ReviewInput) {
@@ -97,12 +113,19 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
         model: MODEL,
         overallScore: null,
         reviews: [],
-        error: getErrorMessage(error),
+        error: quotaSummary(error, retryAfterSeconds),
         retryAfterSeconds,
-        overallSummary: "The automated suite completed, but the AI review layer could not run because the model quota is currently exhausted.",
+        overallSummary: "The deterministic test suite completed successfully, but the optional AI review layer was unavailable because the Gemini quota is exhausted. No test result was changed or retried.",
       };
     }
 
-    throw error;
+    return {
+      status: "ERROR",
+      model: MODEL,
+      overallScore: null,
+      reviews: [],
+      error: getErrorMessage(error),
+      overallSummary: "The deterministic test suite completed, but the AI review layer encountered an error. The automated test results remain authoritative.",
+    };
   }
 }
