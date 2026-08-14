@@ -9,9 +9,7 @@ export async function GET() {
   const dir = path.join(process.cwd(), "test-reports", "web-runs");
   try {
     const names = await fs.readdir(dir);
-    const reportNames = names.filter(
-      (name) => name.endsWith(".json") && !name.endsWith(".playwright.json") && !name.endsWith(".result.json")
-    );
+    const reportNames = names.filter((name) => name.endsWith(".json") && !name.endsWith(".playwright.json") && !name.endsWith(".result.json"));
     const reports = [];
     for (const name of reportNames) {
       try {
@@ -19,6 +17,8 @@ export async function GET() {
         if (!report.id || !report.startedAt) continue;
         reports.push({
           id: report.id,
+          suite: report.suite,
+          suiteKey: report.suiteKey,
           startedAt: report.startedAt,
           completedAt: report.completedAt,
           durationMs: report.durationMs,
@@ -26,6 +26,7 @@ export async function GET() {
           total: report.total,
           passed: report.passed,
           failed: report.failed,
+          aiReview: report.aiReview ? { status: report.aiReview.status, overallScore: report.aiReview.overallScore ?? null, model: report.aiReview.model } : undefined,
           error: report.error,
         });
       } catch {}
