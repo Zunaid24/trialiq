@@ -1,0 +1,67 @@
+Running 33 tests using 1 worker
+
+  ✓   1 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:47:7 › TrialIQ AI output quality benchmark › 01 — returns a decision-level executive conclusion (2ms)
+  ✓   2 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:48:7 › TrialIQ AI output quality benchmark › 02 — distinguishes review readiness from confidence (3ms)
+  ✓   3 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:53:7 › TrialIQ AI output quality benchmark › 03 — produces prioritized findings (1ms)
+  ✓   4 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:54:7 › TrialIQ AI output quality benchmark › 04 — every priority finding has evidence (3ms)
+  ✓   5 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:55:7 › TrialIQ AI output quality benchmark › 05 — every evidence item identifies a source (4ms)
+  ✓   6 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:56:7 › TrialIQ AI output quality benchmark › 06 — findings explain why they matter (2ms)
+  ✓   7 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:57:7 › TrialIQ AI output quality benchmark › 07 — findings include operational actions (2ms)
+  ✓   8 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:58:7 › TrialIQ AI output quality benchmark › 08 — missing evidence is surfaced (1ms)
+  ✓   9 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:59:7 › TrialIQ AI output quality benchmark › 09 — protocol impact is represented separately (1ms)
+  ✓  10 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:60:7 › TrialIQ AI output quality benchmark › 10 — safety assessment is represented separately (1ms)
+  ✓  11 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:61:7 › TrialIQ AI output quality benchmark › 11 — cross-document relationships are explicit (1ms)
+  ✓  12 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:63:7 › TrialIQ AI output quality benchmark › 12 — single-participant evidence is not promoted to population incidence (7ms)
+  ✓  13 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:73:7 › TrialIQ AI output quality benchmark › 13 — temporal association is not presented as causality (2ms)
+  ✘  14 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:75:7 › TrialIQ AI output quality benchmark › 14 — undocumented eligibility evidence remains reviewable (6ms)
+  ✓  15 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:96:7 › TrialIQ AI output quality benchmark › 15 — recommendations remain operational (5ms)
+  ✓  16 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:97:7 › TrialIQ AI output quality benchmark › 16 — every coordinator action has a reason (3ms)
+  ✓  17 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:98:7 › TrialIQ AI output quality benchmark › 17 — audit counts are present (3ms)
+  ✓  18 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:103:7 › TrialIQ AI output quality benchmark › 18 — evidence quality uses controlled vocabulary (2ms)
+  ✓  19 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:104:7 › TrialIQ AI output quality benchmark › 19 — confidence rationale is present (1ms)
+  ✓  20 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:105:7 › TrialIQ AI output quality benchmark › 20 — model provenance is exposed for auditability (1ms)
+  ✓  21 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:106:7 › TrialIQ AI output quality benchmark › 21 — lab findings are connected to protocol impact when supported (1ms)
+  ✓  22 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:111:7 › TrialIQ AI output quality benchmark › 22 — medication reasoning does not invent a prohibited-medication conclusion (2ms)
+  ✓  23 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:116:7 › TrialIQ AI output quality benchmark › 23 — protocol deviation reasoning addresses operational or data-integrity impact (1ms)
+  ✓  24 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:121:7 › TrialIQ AI output quality benchmark › 24 — medical coding reasoning does not fabricate final dictionary codes (2ms)
+  ✓  25 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:126:7 › TrialIQ AI output quality benchmark › 25 — overall decision coherence reflects unresolved evidence (1ms)
+  ✓  26 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:131:7 › TrialIQ AI output quality benchmark › 26 — evidence lineage survives into the decision narrative (1ms)
+  ✓  27 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:135:7 › TrialIQ AI output quality benchmark › 27 — unsupported claims are suppressed when source evidence is incomplete (1ms)
+  ✓  28 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:139:7 › TrialIQ AI output quality benchmark › 28 — unresolved evidence creates an actionable review step (1ms)
+  ✓  29 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:142:7 › TrialIQ AI output quality benchmark › 29 — why-it-matters statements are specific enough for reviewer triage (1ms)
+  ✓  30 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:145:7 › TrialIQ AI output quality benchmark › 30 — longitudinal context is preserved across dates and visit timing (1ms)
+  ✓  31 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:149:7 › TrialIQ AI output quality benchmark › 31 — contradiction and uncertainty are represented rather than silently resolved (1ms)
+  ✓  32 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:153:7 › TrialIQ AI output quality benchmark › 32 — sparse or incomplete source evidence does not produce definitive clinical treatment instructions (1ms)
+  ✓  33 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:157:7 › TrialIQ AI output quality benchmark › 33 — the output preserves the required evidence-to-decision chain (2ms)
+
+
+  1) [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:75:7 › TrialIQ AI output quality benchmark › 14 — undocumented eligibility evidence remains reviewable 
+
+    Error: expect(received).not.toMatch(expected)
+
+    Expected pattern: not /"status"\s*:\s*"(?:confirmed|met|eligible)"/
+    Received string:      "{\"priority\":\"critical\",\"title\":\"multiple screening laboratory values outside protocol thresholds\",\"finding\":\"hemoglobin, anc, platelets, creatinine, alt, and ast fail protocol screening thresholds.\",\"findingtype\":\"derived check\",\"whyitmatters\":\"directly impacts eligibility and participant safety review regarding baseline organ function and hematologic status.\",\"interpretation\":\"participant fails multiple baseline laboratory criteria specified by the protocol.\",\"causality\":\"not applicable\",\"evidence\":[{\"sourceid\":\"protocol-demo.pdf\",\"fact\":\"hemoglobin screening threshold: >=12.0 g/dl, anc screening threshold: >=1.5 ×10⁹/l, platelet screening threshold: >=150 ×10⁹/l, creatinine screening threshold: <=1.2 mg/dl, alt screening threshold: <=45 u/l, ast screening threshold: <=40 u/l.\"},{\"sourceid\":\"lab-demo.pdf\",\"fact\":\"hemoglobin 10.2 g/dl, anc 1.1 ×10⁹/l, platelets 145 ×10⁹/l, creatinine 1.4 mg/dl, alt 82 u/l, ast 76 u/l.\"}],\"missingevidence\":[\"repeat lab draws\",\"investigator assessment of clinical significance\"],\"recommendedaction\":\"verify repeat laboratory values against protocol screening thresholds and consult the investigator for eligibility confirmation.\",\"status\":\"confirmed\",\"confidence\":5}"
+
+      86 |     undocumentedFindings.forEach((finding: any) => {
+      87 |       const text = JSON.stringify(finding).toLowerCase();
+    > 88 |       expect(text).not.toMatch(/"status"\s*:\s*"(?:confirmed|met|eligible)"/);
+         |                        ^
+      89 |       expect(text).not.toMatch(/\b(?:definitely|confirmed|documented)\s+(?:eligible|met|compliant)\b/);
+      90 |     });
+      91 |
+        at forEach (C:\Users\hp\Desktop\trialiq\tests\e2e\ai-quality-benchmark.spec.ts:88:24)
+        at C:\Users\hp\Desktop\trialiq\tests\e2e\ai-quality-benchmark.spec.ts:86:26
+
+    Error Context: test-results\ai-quality-benchmark-Trial-12cbb-evidence-remains-reviewable-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ai-quality-benchmark-Trial-12cbb-evidence-remains-reviewable-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ai-quality-benchmark-Trial-12cbb-evidence-remains-reviewable-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:75:7 › TrialIQ AI output quality benchmark › 14 — undocumented eligibility evidence remains reviewable 
+  32 passed (36.0s)

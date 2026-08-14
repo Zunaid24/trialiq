@@ -1,0 +1,27 @@
+{
+  "testId": 8,
+  "testName": "08 — reports route loads",
+  "status": "passed",
+  "durationMs": 3581,
+  "url": "http://localhost:3000/dashboard/reports",
+  "visibleText": "iq\nTrialIQ AI\nMVP\nDashboard\nClinical Intelligence\nClinical Memory\nReview Queue\nClinical Workspace\nAnalytics\nReports\nSettings\nSign out\n9+\n\nZunaid Ahmed Khan\n\nxunayd786@gmail.com\n\nZ\n\nREPORTING\n\nReports\n\nReview persistent intelligence by segment and export a clean report for your team.\n\nExport PDF\nReport filters\nCurrent study\nLast 30 days\nLast 90 days\nAll\nSafety\nProtocol\nData\nMedication\n\nParticipants\n\n0\n\nSaved findings\n\n200\n\nHigh-risk\n\n163\n\nOpen review\n\n200\n\nAction report\n\nCurrent study · All · My TrialIQ Workspace\n\nPRIORITY\tTYPE\tFINDING\tPARTICIPANT\tTIME\nHIGH\tClinical Intelligence Finding\tScreening Laboratory Values Outside Protocol Thresholds\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tProtocol Deviation: Missed Visit Window\tWorkspace finding\tToday\nHIGH\tClinical Intelligence\tMultiple screening laboratory parameters fail protocol thresholds alongside documentation gaps in prior medication washouts and visit window compliance, requiring a definitive eligibility review hold.\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tMultiple Screening Laboratory Threshold Violations\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tUndocumented Prednisone Dose and Washout Context\tWorkspace finding\tToday\nHIGH\tClinical Intelligence\tReview Required\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tMultiple Screening Laboratory Threshold Failures\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tGrade 2 Nausea and Vomiting Temporal Association\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tProtocol Deviation: Delayed Day 15 Visit Window\tWorkspace finding\tToday\nHIGH\tClinical Intelligence\tMultiple screening laboratory values fail protocol thresholds alongside unconfirmed washout criteria and protocol deviations, requiring a hold on eligibility and further safety review.\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tMultiple Laboratory Screening Threshold Failures\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tProtocol Deviation: Missed Visit Window\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tGrade 2 Nausea and Vomiting Post-Treatment\tWorkspace finding\tToday\nHIGH\tClinical Intelligence\tParticipant screening and ongoing protocol compliance review indicate multiple failed laboratory screening thresholds, an out-of-window protocol deviation, and undocumented medication washout context. Review Required.\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tMultiple Screening Laboratory Values Fail Protocol Thresholds\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tProtocol Deviation: Out-of-Window Day 15 Visit and CBC Collection\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tGrade 2 Nausea and Vomiting Temporal Association with Study Treatment\tWorkspace finding\tToday\nHIGH\tClinical Intelligence\tMultiple screening laboratory values fail protocol thresholds, and critical data gaps exist regarding prior prednisone exposure and protocol eligibility criteria. Review Required before confirming trial status.\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tMultiple Screening Laboratory Threshold Failures\tWorkspace finding\tToday\nHIGH\tClinical Intelligence Finding\tProtocol Deviation: Day 15 Visit Window Exceeded\tWorkspace finding\tToday\nExport includes only the report region. Choose “Save as PDF” in the print dialog.",
+  "controls": [
+    "button: Open Next.js Dev Tools",
+    "a: TrialIQ AI home",
+    "a: Dashboard",
+    "a: Clinical Intelligence",
+    "a: Clinical Memory",
+    "a: Review Queue",
+    "a: Clinical Workspace",
+    "a: Analytics",
+    "a: Reports",
+    "a: Settings",
+    "button: Sign out",
+    "input: Search TrialIQ",
+    "button: Notifications, 12 unread",
+    "button: Export PDF",
+    "select: Current study Last 30 days Last 90 days",
+    "select: All Safety Protocol Data Medication"
+  ],
+  "screenshotPath": "C:\\Users\\hp\\Desktop\\trialiq\\test-reports\\web-runs\\2026-08-14_16-02-19Z\\evidence\\08.jpg"
+}

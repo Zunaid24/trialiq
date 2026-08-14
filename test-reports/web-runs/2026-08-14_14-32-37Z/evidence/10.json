@@ -1,0 +1,25 @@
+{
+  "testId": 10,
+  "testName": "10 — clinical intelligence page exposes the evidence-to-decision workflow",
+  "status": "passed",
+  "durationMs": 3666,
+  "url": "http://localhost:3000/dashboard/clinical-intelligence",
+  "visibleText": "iq\nTrialIQ AI\nMVP\nDashboard\nClinical Intelligence\nClinical Memory\nReview Queue\nClinical Workspace\nAnalytics\nReports\nSettings\nSign out\n9+\n\nZunaid Ahmed Khan\n\nxunayd786@gmail.com\n\nZ\nCLINICAL INTELLIGENCE\nFrom evidence to decisions\n\nTrialIQ separates observed evidence from interpretation, connects records across modules and identifies what must be verified before a clinical decision is made.\n\nConnecting evidence…\n\nConnecting clinical evidence\n\nTrialIQ is reasoning across the study evidence pack.",
+  "controls": [
+    "a: TrialIQ AI home",
+    "a: Dashboard",
+    "a: Clinical Intelligence",
+    "a: Clinical Memory",
+    "a: Review Queue",
+    "a: Clinical Workspace",
+    "a: Analytics",
+    "a: Reports",
+    "a: Settings",
+    "button: Sign out",
+    "input: Search TrialIQ",
+    "button: Notifications, 12 unread",
+    "button: Connecting evidence…",
+    "button: Open Next.js Dev Tools"
+  ],
+  "screenshotPath": "C:\\Users\\hp\\Desktop\\trialiq\\test-reports\\web-runs\\2026-08-14_14-32-37Z\\evidence\\10.jpg"
+}

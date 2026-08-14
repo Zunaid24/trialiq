@@ -1,0 +1,69 @@
+Running 33 tests using 1 worker
+
+  ✘   1 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:47:7 › TrialIQ AI output quality benchmark › 01 — returns a decision-level executive conclusion (0ms)
+  -   2 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:48:7 › TrialIQ AI output quality benchmark › 02 — distinguishes review readiness from confidence
+  -   3 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:53:7 › TrialIQ AI output quality benchmark › 03 — produces prioritized findings
+  -   4 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:54:7 › TrialIQ AI output quality benchmark › 04 — every priority finding has evidence
+  -   5 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:55:7 › TrialIQ AI output quality benchmark › 05 — every evidence item identifies a source
+  -   6 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:56:7 › TrialIQ AI output quality benchmark › 06 — findings explain why they matter
+  -   7 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:57:7 › TrialIQ AI output quality benchmark › 07 — findings include operational actions
+  -   8 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:58:7 › TrialIQ AI output quality benchmark › 08 — missing evidence is surfaced
+  -   9 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:59:7 › TrialIQ AI output quality benchmark › 09 — protocol impact is represented separately
+  -  10 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:60:7 › TrialIQ AI output quality benchmark › 10 — safety assessment is represented separately
+  -  11 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:61:7 › TrialIQ AI output quality benchmark › 11 — cross-document relationships are explicit
+  -  12 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:63:7 › TrialIQ AI output quality benchmark › 12 — single-participant evidence is not promoted to population incidence
+  -  13 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:73:7 › TrialIQ AI output quality benchmark › 13 — temporal association is not presented as causality
+  -  14 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:75:7 › TrialIQ AI output quality benchmark › 14 — undocumented eligibility evidence remains reviewable
+  -  15 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:96:7 › TrialIQ AI output quality benchmark › 15 — recommendations remain operational
+  -  16 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:97:7 › TrialIQ AI output quality benchmark › 16 — every coordinator action has a reason
+  -  17 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:98:7 › TrialIQ AI output quality benchmark › 17 — audit counts are present
+  -  18 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:103:7 › TrialIQ AI output quality benchmark › 18 — evidence quality uses controlled vocabulary
+  -  19 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:104:7 › TrialIQ AI output quality benchmark › 19 — confidence rationale is present
+  -  20 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:105:7 › TrialIQ AI output quality benchmark › 20 — model provenance is exposed for auditability
+  -  21 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:106:7 › TrialIQ AI output quality benchmark › 21 — lab findings are connected to protocol impact when supported
+  -  22 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:111:7 › TrialIQ AI output quality benchmark › 22 — medication reasoning does not invent a prohibited-medication conclusion
+  -  23 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:116:7 › TrialIQ AI output quality benchmark › 23 — protocol deviation reasoning addresses operational or data-integrity impact
+  -  24 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:121:7 › TrialIQ AI output quality benchmark › 24 — medical coding reasoning does not fabricate final dictionary codes
+  -  25 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:126:7 › TrialIQ AI output quality benchmark › 25 — overall decision coherence reflects unresolved evidence
+  -  26 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:131:7 › TrialIQ AI output quality benchmark › 26 — evidence lineage survives into the decision narrative
+  -  27 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:135:7 › TrialIQ AI output quality benchmark › 27 — unsupported claims are suppressed when source evidence is incomplete
+  -  28 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:139:7 › TrialIQ AI output quality benchmark › 28 — unresolved evidence creates an actionable review step
+  -  29 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:142:7 › TrialIQ AI output quality benchmark › 29 — why-it-matters statements are specific enough for reviewer triage
+  -  30 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:145:7 › TrialIQ AI output quality benchmark › 30 — longitudinal context is preserved across dates and visit timing
+  -  31 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:149:7 › TrialIQ AI output quality benchmark › 31 — contradiction and uncertainty are represented rather than silently resolved
+  -  32 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:153:7 › TrialIQ AI output quality benchmark › 32 — sparse or incomplete source evidence does not produce definitive clinical treatment instructions
+  -  33 [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:157:7 › TrialIQ AI output quality benchmark › 33 — the output preserves the required evidence-to-decision chain
+
+
+  1) [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:47:7 › TrialIQ AI output quality benchmark › 01 — returns a decision-level executive conclusion 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      33 |       await page.goto(`${baseURL}/dashboard/clinical-intelligence`);
+      34 |       const response = await responsePromise;
+    > 35 |       expect(response.ok()).toBeTruthy();
+         |                             ^
+      36 |
+      37 |       const payload = await response.json();
+      38 |       expect(payload.success).toBeTruthy();
+        at C:\Users\hp\Desktop\trialiq\tests\e2e\ai-quality-benchmark.spec.ts:35:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\ai-quality-benchmark-Trial-bb6b2--level-executive-conclusion-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ai-quality-benchmark-Trial-bb6b2--level-executive-conclusion-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ai-quality-benchmark-Trial-bb6b2--level-executive-conclusion-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ai-quality-benchmark-Trial-bb6b2--level-executive-conclusion-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\e2e\ai-quality-benchmark.spec.ts:47:7 › TrialIQ AI output quality benchmark › 01 — returns a decision-level executive conclusion 
+  32 did not run

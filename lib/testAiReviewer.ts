@@ -1,22 +1,20 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-
-// Keep the reviewer on currently supported Gemini 3 models. Gemini 2.5 Flash-Lite
-// is no longer available to new users, so it must not be a fallback.
-const CURRENT_MODELS = [
-  "gemini-3.6-flash",
+const apiKey = process.env.GEMINI_API_KEY;
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+const PRIMARY_MODEL = process.env.TEST_REVIEW_MODEL || "gemini-3.6-flash";
+const DEFAULT_FALLBACK_MODELS = [
   "gemini-3.5-flash-lite",
-  "gemini-3.5-flash",
   "gemini-3.1-flash-lite",
+  "gemini-2.5-flash-lite",
 ];
-
-const configuredModel = process.env.TEST_REVIEW_MODEL?.trim();
-const MODELS = [configuredModel, ...CURRENT_MODELS].filter(
-  (value, index, values): value is string =>
-    Boolean(value) && values.indexOf(value) === index,
-);
-const PRIMARY_MODEL = MODELS[0] || CURRENT_MODELS[0];
+const REVIEW_MODELS = Array.from(new Set([
+  PRIMARY_MODEL,
+  ...(process.env.TEST_REVIEW_FALLBACK_MODELS || DEFAULT_FALLBACK_MODELS.join(","))
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean),
+]));
 
 type ReviewInput = {
   suite: string;
@@ -60,12 +58,6 @@ function isQuotaError(error: unknown) {
   return code === 429 || code === "429" || code === "resource_exhausted" || code === "RESOURCE_EXHAUSTED" || message.includes("resource_exhausted") || message.includes("quota exceeded") || message.includes("too many requests") || message.includes("generate_content_free_tier_requests");
 }
 
-function isModelUnavailableError(error: unknown) {
-  const message = getErrorMessage(error).toLowerCase();
-  const code = getErrorCode(error);
-  return code === 404 || code === "404" || code === "not_found" || code === "NOT_FOUND" || message.includes("model is no longer available") || message.includes("model not found") || message.includes("is not found") || message.includes("not available to new users") || message.includes("unsupported model");
-}
-
 function getRetryAfterSeconds(error: unknown) {
   const message = getErrorMessage(error);
   const retryMatch = message.match(/retry(?:delay|\s+in)?[^0-9]{0,30}(\d+(?:\.\d+)?)\s*s/i);
@@ -74,19 +66,15 @@ function getRetryAfterSeconds(error: unknown) {
   return detailMatch ? Math.ceil(Number(detailMatch[1])) : null;
 }
 
-function quotaSummary(models: string[], errors: unknown[]) {
-  const retryAfterSeconds = errors.map(getRetryAfterSeconds).filter((value): value is number => value !== null).sort((a, b) => a - b)[0] ?? null;
-  const modelText = models.join(", ");
-  return {
-    message: retryAfterSeconds
-      ? `Gemini review quota is currently unavailable across the configured review models (${modelText}). Retry after approximately ${retryAfterSeconds}s or use a project with available quota.`
-      : `Gemini review quota is currently unavailable across the configured review models (${modelText}). Increase quota, wait for the provider reset, or configure another project/provider.`,
-    retryAfterSeconds,
-  };
+function quotaSummary(models: string[], retryAfterSeconds: number | null) {
+  const modelList = models.join(" → ");
+  return retryAfterSeconds
+    ? `Gemini AI review quota was exhausted across the configured review models (${modelList}). The automated tests completed; AI review was skipped. Retry after approximately ${retryAfterSeconds}s or configure a project with available quota.`
+    : `Gemini AI review quota was exhausted across the configured review models (${modelList}). The automated tests completed; AI review was skipped. Increase quota, wait for provider reset, or configure another provider/project.`;
 }
 
 export async function reviewQualitySuite(input: ReviewInput) {
-  if (!process.env.GEMINI_API_KEY) return { status: "SKIPPED", reason: "GEMINI_API_KEY is not configured for the AI review layer.", model: PRIMARY_MODEL, overallScore: null, reviews: [] };
+  if (!apiKey || !ai) return { status: "SKIPPED", reason: "GEMINI_API_KEY is not configured for the AI review layer.", model: PRIMARY_MODEL, overallScore: null, reviews: [] };
 
   const system = `
 You are TrialIQ's AI Quality Reviewer. Playwright establishes whether an automated requirement passed; you evaluate whether the tested product experience is actually good and what should be improved.
@@ -142,18 +130,16 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
     parts.push({ inlineData: { mimeType: "image/jpeg", data: test.evidence.screenshotBase64 } });
   }
 
-  const quotaErrors: unknown[] = [];
-  const unavailableModels: string[] = [];
+  const quotaModels: string[] = [];
   let lastError: unknown = null;
+  let lastRetryAfterSeconds: number | null = null;
 
-  for (const model of MODELS) {
+  for (const model of REVIEW_MODELS) {
     try {
       const response = await ai.models.generateContent({
         model,
         contents: [{ role: "user", parts }],
-        // Gemini 3.x deprecated temperature/top_p/top_k. Keep the request minimal
-        // so the reviewer remains compatible with current stable Gemini models.
-        config: { responseMimeType: "application/json" },
+        config: { responseMimeType: "application/json", temperature: 0.1 },
       });
 
       const parsed = extractJson(response.text ?? "");
@@ -161,54 +147,39 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
         ...parsed,
         status: "COMPLETE",
         model,
+        attemptedModels: quotaModels.length ? [...quotaModels, model] : [model],
         fallbackUsed: model !== PRIMARY_MODEL,
-        attemptedModels: [...quotaErrors.map(() => "quota-limited"), ...unavailableModels, model],
       };
     } catch (error) {
       lastError = error;
-      if (isQuotaError(error)) {
-        quotaErrors.push(error);
-        continue;
+      lastRetryAfterSeconds = getRetryAfterSeconds(error);
+      if (!isQuotaError(error)) {
+        return {
+          status: "ERROR",
+          model,
+          attemptedModels: [...quotaModels, model],
+          fallbackUsed: model !== PRIMARY_MODEL,
+          overallScore: null,
+          reviews: [],
+          error: getErrorMessage(error),
+          overallSummary: "The deterministic test suite completed, but the AI review layer encountered an error. The automated test results remain authoritative.",
+        };
       }
-      if (isModelUnavailableError(error)) {
-        unavailableModels.push(model);
-        continue;
-      }
-      return {
-        status: "ERROR",
-        model,
-        overallScore: null,
-        reviews: [],
-        error: getErrorMessage(error),
-        attemptedModels: MODELS,
-        overallSummary: "The automated test suite completed, but the AI review layer encountered a non-recoverable provider error. The automated test results remain authoritative.",
-      };
+
+      quotaModels.push(model);
     }
   }
 
-  if (quotaErrors.length === MODELS.length) {
-    const quota = quotaSummary(MODELS, quotaErrors);
-    return {
-      status: "QUOTA_LIMITED",
-      model: PRIMARY_MODEL,
-      attemptedModels: MODELS,
-      fallbackUsed: false,
-      overallScore: null,
-      reviews: [],
-      error: quota.message,
-      retryAfterSeconds: quota.retryAfterSeconds,
-      overallSummary: "The deterministic test suite completed, but every configured Gemini review model was quota-limited. No test result was changed or retried.",
-    };
-  }
-
   return {
-    status: "ERROR",
-    model: PRIMARY_MODEL,
-    attemptedModels: MODELS,
-    unavailableModels,
+    status: "QUOTA_LIMITED",
+    model: quotaModels[quotaModels.length - 1] || PRIMARY_MODEL,
+    attemptedModels: quotaModels,
+    fallbackUsed: quotaModels.length > 1,
     overallScore: null,
     reviews: [],
-    error: getErrorMessage(lastError),
-    overallSummary: "The automated test suite completed, but none of the configured Gemini review models was available. Check the model configuration and provider quota.",
+    error: quotaSummary(quotaModels, lastRetryAfterSeconds),
+    retryAfterSeconds: lastRetryAfterSeconds,
+    overallSummary: "The deterministic test suite completed, but every configured Gemini reviewer model was quota-limited. No automated test result was changed or retried.",
+    lastProviderError: getErrorMessage(lastError),
   };
 }

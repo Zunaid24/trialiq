@@ -1,0 +1,60 @@
+Running 12 tests using 1 worker
+
+  ✓   1 [chromium] › tests\e2e\ui-quality.spec.ts:61:7 › TrialIQ UI quality — public › 01 — landing page exposes the primary workspace CTA (2.6s)
+  ✓   2 [chromium] › tests\e2e\ui-quality.spec.ts:67:7 › TrialIQ UI quality — public › 02 — auth page exposes usable sign-in controls (1.5s)
+  ✓   3 [chromium] › tests\e2e\ui-quality.spec.ts:74:7 › TrialIQ UI quality — public › 03 — auth form has keyboard-focusable controls (1.5s)
+  ✓   4 [chromium] › tests\e2e\ui-quality.spec.ts:92:7 › TrialIQ UI quality — authenticated navigation › 04 — dashboard renders the core application navigation (6.6s)
+  ✓   5 [chromium] › tests\e2e\ui-quality.spec.ts:101:7 › TrialIQ UI quality — authenticated navigation › 05 — review queue route loads (3.4s)
+  ✓   6 [chromium] › tests\e2e\ui-quality.spec.ts:106:7 › TrialIQ UI quality — authenticated navigation › 06 — clinical workspace route loads (3.1s)
+  ✓   7 [chromium] › tests\e2e\ui-quality.spec.ts:111:7 › TrialIQ UI quality — authenticated navigation › 07 — analytics route loads (3.7s)
+  ✓   8 [chromium] › tests\e2e\ui-quality.spec.ts:116:7 › TrialIQ UI quality — authenticated navigation › 08 — reports route loads (4.0s)
+  ✓   9 [chromium] › tests\e2e\ui-quality.spec.ts:121:7 › TrialIQ UI quality — authenticated navigation › 09 — settings route loads (4.1s)
+  ✓  10 [chromium] › tests\e2e\ui-quality.spec.ts:126:7 › TrialIQ UI quality — authenticated navigation › 10 — clinical intelligence page exposes the evidence-to-decision workflow (4.6s)
+  ✘  11 [chromium] › tests\e2e\ui-quality.spec.ts:133:7 › TrialIQ UI quality — authenticated navigation › 11 — clinical intelligence exposes its core review sections (18.7s)
+  ✓  12 [chromium] › tests\e2e\ui-quality.spec.ts:143:7 › TrialIQ UI quality — authenticated navigation › 12 — clinical intelligence presents the reviewer disclaimer (13.9s)
+
+
+  1) [chromium] › tests\e2e\ui-quality.spec.ts:133:7 › TrialIQ UI quality — authenticated navigation › 11 — clinical intelligence exposes its core review sections 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: /priority findings/i })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for getByRole('heading', { name: /priority findings/i })
+
+
+      133 |   test("11 — clinical intelligence exposes its core review sections", async ({ page }) => {
+      134 |     await page.goto("/dashboard/clinical-intelligence");
+    > 135 |     await expect(page.getByRole("heading", { name: /priority findings/i })).toBeVisible({ timeout: 15_000 });
+          |                                                                             ^
+      136 |     await expect(page.getByRole("heading", { name: /cross-document connections/i })).toBeVisible({ timeout: 15_000 });
+      137 |     await expect(page.getByRole("heading", { name: /protocol impact/i })).toBeVisible({ timeout: 15_000 });
+      138 |     await expect(page.getByRole("heading", { name: /safety assessment/i })).toBeVisible({ timeout: 15_000 });
+        at C:\Users\hp\Desktop\trialiq\tests\e2e\ui-quality.spec.ts:135:77
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ui-quality-TrialIQ-UI-qual-174b5-es-its-core-review-sections-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\e2e\ui-quality.spec.ts:133:7 › TrialIQ UI quality — authenticated navigation › 11 — clinical intelligence exposes its core review sections 
+  11 passed (1.2m)

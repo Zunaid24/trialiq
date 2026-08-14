@@ -1,0 +1,693 @@
+{
+  "studyTitle": "TRIALIQ-101 — Phase II Investigational Study",
+  "participantId": "PT-1042",
+  "executiveDecision": "Hold enrollment and treatment due to multiple screening laboratory failures (Hemoglobin, ANC, Platelets, Creatinine, ALT, AST) and unresolved protocol exclusion criteria.",
+  "decisionReadiness": "Review Required",
+  "executiveSummary": "Participant PT-1042 presents multiple critical screening failures across hematology and chemistry parameters when compared against protocol thresholds. Specifically, hemoglobin (10.2 g/dL vs >=12.0), ANC (1.1 x10^9/L vs >=1.5), platelets (145 x10^9/L vs >=150), creatinine (1.4 mg/dL vs <=1.2), ALT (82 U/L vs <=45), and AST (76 U/L vs <=40) fail to meet protocol requirements. Additionally, active adverse events including Grade 2 nausea/vomiting following study treatment, a protocol deviation regarding a delayed Day 21 visit for Day 15 assessments, and missing documentation for prednisone dose/washout and non-laboratory eligibility criteria prevent safe continuation or enrollment confirmation.",
+  "priorityFindings": [
+    {
+      "priority": "Critical",
+      "title": "Multiple Screening Laboratory Threshold Violations",
+      "finding": "Hemoglobin is 10.2 g/dL (threshold >=12.0), ANC is 1.1 x10^9/L (threshold >=1.5), Platelets are 145 x10^9/L (threshold >=150), Creatinine is 1.4 mg/dL (threshold <=1.2), ALT is 82 U/L (threshold <=45), and AST is 76 U/L (threshold <=40).",
+      "findingType": "Derived Check",
+      "whyItMatters": "Exceeds or falls below protocol-mandated safety and eligibility limits, directly failing inclusion/exclusion criteria.",
+      "interpretation": "Participant demonstrates combined bone marrow suppression, renal impairment, and hepatocellular injury at screening.",
+      "causality": "Not applicable",
+      "evidence": [
+        {
+          "sourceId": "protocol-demo.pdf",
+          "fact": "Hemoglobin screening threshold: >=12.0 g/dL"
+        },
+        {
+          "sourceId": "protocol-demo.pdf",
+          "fact": "ANC screening threshold: >=1.5 x10^9/L"
+        },
+        {
+          "sourceId": "protocol-demo.pdf",
+          "fact": "Platelet screening threshold: >=150 x10^9/L"
+        },
+        {
+          "sourceId": "protocol-demo.pdf",
+          "fact": "Creatinine screening threshold: <=1.2 mg/dL"
+        },
+        {
+          "sourceId": "protocol-demo.pdf",
+          "fact": "ALT screening threshold: <=45 U/L"
+        },
+        {
+          "sourceId": "protocol-demo.pdf",
+          "fact": "AST screening threshold: <=40 U/L"
+        },
+        {
+          "sourceId": "lab-demo.pdf",
+          "fact": "Hemoglobin 10.2 g/dL against 12.0-16.0 g/dL reference range."
+        },
+        {
+          "sourceId": "lab-demo.pdf",
+          "fact": "ANC 1.1 x10^9/L against 1.5-7.5 x10^9/L reference range."
+        },
+        {
+          "sourceId": "lab-demo.pdf",
+          "fact": "Platelets 145 x10^9/L against 150-400 x10^9/L reference range."
+        },
+        {
+          "sourceId": "lab-demo.pdf",
+          "fact": "Creatinine 1.4 mg/dL against 0.6-1.2 mg/dL reference range."
+        },
+        {
+          "sourceId": "lab-demo.pdf",
+          "fact": "ALT 82 U/L against 7-45 U/L reference range."
+        },
+        {
+          "sourceId": "lab-demo.pdf",
+          "fact": "AST 76 U/L against 10-40 U/L reference range."
+        }
+      ],
+      "missingEvidence": [
+        "Repeat lab confirmatory values",
+        "Investigator assessment of clinical significance"
+      ],
+      "recommendedAction": "Verify repeat laboratory values and confirm screen failure status with the principal investigator.",
+      "status": "Confirmed",
+      "confidence": 5
+    },
+    {
+      "priority": "High",
+      "title": "Grade 2 Nausea and Vomiting Following Study Treatment",
+      "finding": "Grade 2 nausea with intermittent vomiting began 05-Aug-2026 approximately 18 hours after study treatment.",
+      "findingType": "Temporal Association",
+      "whyItMatters": "Indicates acute treatment-related toxicity requiring dose modification or interruption.",
+      "interpretation": "Symptom onset 18 hours post-treatment exhibits temporal association with study drug administration.",
+      "causality": "Possible",
+      "evidence": [
+        {
+          "sourceId": "adverse-event-demo.pdf",
+          "fact": "Grade 2 nausea with intermittent vomiting began 05-Aug-2026 approximately 18 hours after study treatment."
+        },
+        {
+          "sourceId": "adverse-event-demo.pdf",
+          "fact": "Study dose was temporarily held and oral antiemetic therapy was initiated."
+        }
+      ],
+      "missingEvidence": [
+        "Final investigator causality assessment",
+        "Expectedness assessment"
+      ],
+      "recommendedAction": "Query site for final causality assessment and resolution date of the nausea and vomiting event.",
+      "status": "Confirmed",
+      "confidence": 4
+    },
+    {
+      "priority": "High",
+      "title": "Protocol Deviation: Missed Visit Window and Delayed Assessments",
+      "finding": "Day 15 visit occurred on Day 21 instead of the allowed Day 13 through Day 17 window, delaying CBC collection.",
+      "findingType": "Data Quality Issue",
+      "whyItMatters": "Compromises protocol compliance and schedule integrity for safety monitoring.",
+      "interpretation": "Transportation issues caused a major visit window violation and delayed safety laboratory draws.",
+      "causality": "Not applicable",
+      "evidence": [
+        {
+          "sourceId": "deviation-demo.pdf",
+          "fact": "Day 15 visit window was Day 13 through Day 17; actual visit occurred Day 21."
+        },
+        {
+          "sourceId": "deviation-demo.pdf",
+          "fact": "CBC was collected on Day 21 rather than within the Day 15 visit window."
+        },
+        {
+          "sourceId": "deviation-demo.pdf",
+          "fact": "Transportation issues are documented as the reason."
+        }
+      ],
+      "missingEvidence": [
+        "Deviation severity grading",
+        "Final investigator impact assessment"
+      ],
+      "recommendedAction": "Document protocol deviation in the trial management system and request investigator impact assessment.",
+      "status": "Confirmed",
+      "confidence": 5
+    },
+    {
+      "priority": "Moderate",
+      "title": "Undocumented Prednisone Dose, Route, and Washout Context",
+      "finding": "Recent prednisone exposure ended 05-Aug-2026, but dose, route, and protocol washout applicability are not documented.",
+      "findingType": "Data Quality Issue",
+      "whyItMatters": "Prevents determination of prohibited medication status and potential immunosuppressive confounding.",
+      "interpretation": "Incomplete medication context obscures eligibility and safety evaluation.",
+      "causality": "Not established",
+      "evidence": [
+        {
+          "sourceId": "participant-demo.pdf",
+          "fact": "Recent prednisone exposure ended 05-Aug-2026; dose and protocol washout applicability are not documented."
+        },
+        {
+          "sourceId": "medication-demo.pdf",
+          "fact": "Prednisone dose, route and full protocol restriction context are not documented."
+        }
+      ],
+      "missingEvidence": [
+        "Prednisone dose",
+        "Route of administration",
+        "Active protocol washout criteria match"
+      ],
+      "recommendedAction": "Issue site query for complete prednisone dosing history and verify against active protocol washout rules.",
+      "status": "Requires Review",
+      "confidence": 3
+    }
+  ],
+  "crossDocumentLinks": [
+    {
+      "title": "Laboratory Abnormalities and Safety Events",
+      "relationship": "Directly correlates abnormal lab findings with documented safety safety events.",
+      "clinicalRelevance": "Confirms presence of elevated liver enzymes, neutropenia, and anemia across both lab reports and safety listings.",
+      "evidence": [
+        {
+          "sourceId": "lab-demo.pdf",
+          "fact": "ALT 82 U/L, AST 76 U/L, Hemoglobin 10.2 g/dL, ANC 1.1 x10^9/L."
+        },
+        {
+          "sourceId": "safety-demo.pdf",
+          "fact": "Four safety events are documented for PT-1042: elevated liver enzymes, neutropenia, Grade 2 nausea/vomiting and mild anemia."
+        }
+      ],
+      "status": "Requires Review"
+    },
+    {
+      "title": "Medication History and Exclusions",
+      "relationship": "Links recent prednisone use with missing washout and protocol exclusion rules.",
+      "clinicalRelevance": "Unresolved steroid washout could impact eligibility under protocol exclusion guidelines.",
+      "evidence": [
+        {
+          "sourceId": "medication-demo.pdf",
+          "fact": "Prednisone was documented from 01-Aug-2026 through 05-Aug-2026."
+        },
+        {
+          "sourceId": "protocol-demo.pdf",
+          "fact": "Prohibited medication and washout requirements must be confirmed against the active protocol."
+        }
+      ],
+      "status": "Requires Review"
+    }
+  ],
+  "protocolImpact": {
+    "affectedCriteria": [
+      {
+        "criterion": "Hemoglobin screening threshold",
+        "measuredValue": "10.2",
+        "threshold": "Hemoglobin screening threshold: >=12.0 g/dL",
+        "impact": "Hemoglobin is outside the supplied protocol screening threshold and requires eligibility review.",
+        "status": "Not Met",
+        "evidence": [
+          {
+            "sourceId": "protocol-demo.pdf",
+            "fact": "Hemoglobin screening threshold: >=12.0 g/dL"
+          },
+          {
+            "sourceId": "lab-demo.pdf",
+            "fact": "Hemoglobin 10.2 g/dL against 12.0–16.0 g/dL reference range."
+          }
+        ]
+      },
+      {
+        "criterion": "ANC screening threshold",
+        "measuredValue": "1.1",
+        "threshold": "ANC screening threshold: >=1.5 ×10⁹/L",
+        "impact": "ANC is outside the supplied protocol screening threshold and requires eligibility review.",
+        "status": "Not Met",
+        "evidence": [
+          {
+            "sourceId": "protocol-demo.pdf",
+            "fact": "ANC screening threshold: >=1.5 ×10⁹/L"
+          },
+          {
+            "sourceId": "lab-demo.pdf",
+            "fact": "ANC 1.1 ×10⁹/L against 1.5–7.5 ×10⁹/L reference range."
+          }
+        ]
+      },
+      {
+        "criterion": "Creatinine screening threshold",
+        "measuredValue": "1.4",
+        "threshold": "Creatinine screening threshold: <=1.2 mg/dL",
+        "impact": "Creatinine is outside the supplied protocol screening threshold and requires eligibility review.",
+        "status": "Not Met",
+        "evidence": [
+          {
+            "sourceId": "protocol-demo.pdf",
+            "fact": "Creatinine screening threshold: <=1.2 mg/dL"
+          },
+          {
+            "sourceId": "lab-demo.pdf",
+            "fact": "Creatinine 1.4 mg/dL against 0.6–1.2 mg/dL reference range."
+          }
+        ]
+      },
+      {
+        "criterion": "ALT screening threshold",
+        "measuredValue": "82",
+        "threshold": "ALT screening threshold: <=45 U/L",
+        "impact": "ALT is outside the supplied protocol screening threshold and requires eligibility review.",
+        "status": "Not Met",
+        "evidence": [
+          {
+            "sourceId": "protocol-demo.pdf",
+            "fact": "ALT screening threshold: <=45 U/L"
+          },
+          {
+            "sourceId": "lab-demo.pdf",
+            "fact": "ALT 82 U/L against 7–45 U/L reference range."
+          }
+        ]
+      },
+      {
+        "criterion": "AST screening threshold",
+        "measuredValue": "76",
+        "threshold": "AST screening threshold: <=40 U/L",
+        "impact": "AST is outside the supplied protocol screening threshold and requires eligibility review.",
+        "status": "Not Met",
+        "evidence": [
+          {
+            "sourceId": "protocol-demo.pdf",
+            "fact": "AST screening threshold: <=40 U/L"
+          },
+          {
+            "sourceId": "lab-demo.pdf",
+            "fact": "AST 76 U/L against 10–40 U/L reference range."
+          }
+        ]
+      },
+      {
+        "criterion": "Total bilirubin screening threshold",
+        "measuredValue": "1.1",
+        "threshold": "Total bilirubin screening threshold: <=1.2 mg/dL",
+        "impact": "Total bilirubin is within the supplied protocol screening threshold.",
+        "status": "Met",
+        "evidence": [
+          {
+            "sourceId": "protocol-demo.pdf",
+            "fact": "Total bilirubin screening threshold: <=1.2 mg/dL"
+          },
+          {
+            "sourceId": "lab-demo.pdf",
+            "fact": "Total bilirubin 1.1 mg/dL within 0.2–1.2 mg/dL."
+          }
+        ]
+      }
+    ],
+    "overallImpact": "5 supplied protocol screening criteria are not met; 0 remain pending because required measurements are unavailable."
+  },
+  "safetyAssessment": {
+    "signals": [
+      {
+        "title": "Multi-system Laboratory and Clinical Toxicities",
+        "interpretation": "Participant exhibits concurrent hepatic enzyme elevation, neutropenia, anemia, elevated creatinine, and Grade 2 nausea/vomiting.",
+        "evidence": [
+          {
+            "sourceId": "safety-demo.pdf",
+            "fact": "Four safety events are documented for PT-1042: elevated liver enzymes, neutropenia, Grade 2 nausea/vomiting and mild anemia."
+          },
+          {
+            "sourceId": "lab-demo.pdf",
+            "fact": "ALT 82 U/L, AST 76 U/L, Creatinine 1.4 mg/dL, Hemoglobin 10.2 g/dL, ANC 1.1 x10^9/L."
+          }
+        ],
+        "status": "Pattern Observed"
+      }
+    ],
+    "overallAssessment": "Observed toxicities represent single-participant events requiring dose holds and close clinical management, but do not establish a population-level safety signal."
+  },
+  "dataGaps": [
+    {
+      "gap": "Missing prednisone dose, route, and protocol washout applicability.",
+      "whyItMatters": "Prevents confirmation of prohibited medication exclusion compliance.",
+      "sourceIds": [
+        "participant-demo.pdf",
+        "medication-demo.pdf"
+      ],
+      "nextAction": "Query site coordinator for complete prednisone administration details and active protocol washout guidelines."
+    },
+    {
+      "gap": "Missing MedDRA dictionary version and final numeric codes for verbatim terms.",
+      "whyItMatters": "Prevents accurate medical coding and regulatory reporting consistency.",
+      "sourceIds": [
+        "medical-coding-demo.pdf"
+      ],
+      "nextAction": "Apply active MedDRA dictionary version to code the eight verbatim terms."
+    },
+    {
+      "gap": "Missing non-laboratory eligibility source documentation.",
+      "whyItMatters": "Leaves vital inclusion/exclusion requirements unverified.",
+      "sourceIds": [
+        "participant-demo.pdf"
+      ],
+      "nextAction": "Obtain source documents verifying all non-laboratory protocol criteria."
+    }
+  ],
+  "whatWouldChangeConclusion": [
+    {
+      "evidenceNeeded": "Confirmed repeat laboratory values showing hemoglobin >=12.0, ANC >=1.5, platelets >=150, creatinine <=1.2, ALT <=45, and AST <=40.",
+      "reason": "Would reverse the screen failure status for laboratory parameters.",
+      "priority": "Immediate"
+    },
+    {
+      "evidenceNeeded": "Documentation proving prednisone exposure falls outside protocol exclusion washout windows.",
+      "reason": "Would clear the participant of prohibited medication exclusion violation.",
+      "priority": "Immediate"
+    }
+  ],
+  "coordinatorActions": [
+    {
+      "priority": "Immediate",
+      "action": "Contact principal investigator regarding multiple laboratory screening failures (Hgb, ANC, Platelets, Creatinine, ALT, AST) to determine screen failure status.",
+      "reason": "Values fail protocol thresholds and halt eligibility.",
+      "sourceIds": [
+        "protocol-demo.pdf",
+        "lab-demo.pdf"
+      ]
+    },
+    {
+      "priority": "Immediate",
+      "action": "Query site for complete prednisone dose, route, and washout verification.",
+      "reason": "Required to assess protocol exclusion compliance.",
+      "sourceIds": [
+        "participant-demo.pdf",
+        "medication-demo.pdf"
+      ]
+    },
+    {
+      "priority": "Next Review",
+      "action": "Submit protocol deviation documentation for the delayed Day 21 visit window and obtain investigator impact assessment.",
+      "reason": "Ensures audit trail completeness for protocol compliance.",
+      "sourceIds": [
+        "deviation-demo.pdf"
+      ]
+    }
+  ],
+  "auditSummary": {
+    "sourcesReviewed": 8,
+    "evidenceBackedFindings": 4,
+    "unresolvedItems": 3
+  },
+  "evidenceQuality": "High",
+  "confidence": 4,
+  "confidenceRationale": "High confidence in extracted source facts and deterministic derived checks against protocol thresholds, tempered by missing non-laboratory source documents and incomplete prednisone/coding details.",
+  "limitations": [
+    "Absence of non-laboratory source verification documents.",
+    "Uncoded verbatim medical terms without MedDRA version.",
+    "Single-participant observations cannot establish population-level signals."
+  ],
+  "aiModel": "gemini-3.5-flash-lite",
+  "aiFallbackUsed": true,
+  "evidenceCompleteness": 80,
+  "reviewPressure": "High",
+  "decisionReasons": [
+    "3 evidence gaps may change the assessment.",
+    "3 high-priority findings require attention."
+  ],
+  "quality": {
+    "evidenceCoverage": 100,
+    "actionability": 100,
+    "specificity": 100,
+    "contradictionHandling": 100,
+    "uncertaintyHandling": 100,
+    "overall": 100
+  },
+  "evidenceGraph": {
+    "nodes": [
+      {
+        "id": "finding:Multiple Screening Laboratory Threshold Violations",
+        "type": "finding",
+        "label": "Multiple Screening Laboratory Threshold Violations"
+      },
+      {
+        "id": "source:protocol-demo.pdf",
+        "type": "source",
+        "label": "protocol-demo.pdf"
+      },
+      {
+        "id": "source:lab-demo.pdf",
+        "type": "source",
+        "label": "lab-demo.pdf"
+      },
+      {
+        "id": "finding:Grade 2 Nausea and Vomiting Following Study Treatment",
+        "type": "finding",
+        "label": "Grade 2 Nausea and Vomiting Following Study Treatment"
+      },
+      {
+        "id": "source:adverse-event-demo.pdf",
+        "type": "source",
+        "label": "adverse-event-demo.pdf"
+      },
+      {
+        "id": "finding:Protocol Deviation: Missed Visit Window and Delayed Assessments",
+        "type": "finding",
+        "label": "Protocol Deviation: Missed Visit Window and Delayed Assessments"
+      },
+      {
+        "id": "source:deviation-demo.pdf",
+        "type": "source",
+        "label": "deviation-demo.pdf"
+      },
+      {
+        "id": "finding:Undocumented Prednisone Dose, Route, and Washout Context",
+        "type": "finding",
+        "label": "Undocumented Prednisone Dose, Route, and Washout Context"
+      },
+      {
+        "id": "source:participant-demo.pdf",
+        "type": "source",
+        "label": "participant-demo.pdf"
+      },
+      {
+        "id": "source:medication-demo.pdf",
+        "type": "source",
+        "label": "medication-demo.pdf"
+      },
+      {
+        "id": "link:Laboratory Abnormalities and Safety Events",
+        "type": "relationship",
+        "label": "Laboratory Abnormalities and Safety Events"
+      },
+      {
+        "id": "source:safety-demo.pdf",
+        "type": "source",
+        "label": "safety-demo.pdf"
+      },
+      {
+        "id": "link:Medication History and Exclusions",
+        "type": "relationship",
+        "label": "Medication History and Exclusions"
+      }
+    ],
+    "relationships": [
+      {
+        "from": "source:protocol-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "Hemoglobin screening threshold: >=12.0 g/dL",
+        "sourceIds": [
+          "protocol-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:protocol-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "ANC screening threshold: >=1.5 x10^9/L",
+        "sourceIds": [
+          "protocol-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:protocol-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "Platelet screening threshold: >=150 x10^9/L",
+        "sourceIds": [
+          "protocol-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:protocol-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "Creatinine screening threshold: <=1.2 mg/dL",
+        "sourceIds": [
+          "protocol-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:protocol-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "ALT screening threshold: <=45 U/L",
+        "sourceIds": [
+          "protocol-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:protocol-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "AST screening threshold: <=40 U/L",
+        "sourceIds": [
+          "protocol-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:lab-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "Hemoglobin 10.2 g/dL against 12.0-16.0 g/dL reference range.",
+        "sourceIds": [
+          "lab-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:lab-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "ANC 1.1 x10^9/L against 1.5-7.5 x10^9/L reference range.",
+        "sourceIds": [
+          "lab-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:lab-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "Platelets 145 x10^9/L against 150-400 x10^9/L reference range.",
+        "sourceIds": [
+          "lab-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:lab-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "Creatinine 1.4 mg/dL against 0.6-1.2 mg/dL reference range.",
+        "sourceIds": [
+          "lab-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:lab-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "ALT 82 U/L against 7-45 U/L reference range.",
+        "sourceIds": [
+          "lab-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:lab-demo.pdf",
+        "to": "finding:Multiple Screening Laboratory Threshold Violations",
+        "relationship": "supports",
+        "whyItMatters": "AST 76 U/L against 10-40 U/L reference range.",
+        "sourceIds": [
+          "lab-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:adverse-event-demo.pdf",
+        "to": "finding:Grade 2 Nausea and Vomiting Following Study Treatment",
+        "relationship": "supports",
+        "whyItMatters": "Grade 2 nausea with intermittent vomiting began 05-Aug-2026 approximately 18 hours after study treatment.",
+        "sourceIds": [
+          "adverse-event-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:adverse-event-demo.pdf",
+        "to": "finding:Grade 2 Nausea and Vomiting Following Study Treatment",
+        "relationship": "supports",
+        "whyItMatters": "Study dose was temporarily held and oral antiemetic therapy was initiated.",
+        "sourceIds": [
+          "adverse-event-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:deviation-demo.pdf",
+        "to": "finding:Protocol Deviation: Missed Visit Window and Delayed Assessments",
+        "relationship": "supports",
+        "whyItMatters": "Day 15 visit window was Day 13 through Day 17; actual visit occurred Day 21.",
+        "sourceIds": [
+          "deviation-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:deviation-demo.pdf",
+        "to": "finding:Protocol Deviation: Missed Visit Window and Delayed Assessments",
+        "relationship": "supports",
+        "whyItMatters": "CBC was collected on Day 21 rather than within the Day 15 visit window.",
+        "sourceIds": [
+          "deviation-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:deviation-demo.pdf",
+        "to": "finding:Protocol Deviation: Missed Visit Window and Delayed Assessments",
+        "relationship": "supports",
+        "whyItMatters": "Transportation issues are documented as the reason.",
+        "sourceIds": [
+          "deviation-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:participant-demo.pdf",
+        "to": "finding:Undocumented Prednisone Dose, Route, and Washout Context",
+        "relationship": "supports",
+        "whyItMatters": "Recent prednisone exposure ended 05-Aug-2026; dose and protocol washout applicability are not documented.",
+        "sourceIds": [
+          "participant-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:medication-demo.pdf",
+        "to": "finding:Undocumented Prednisone Dose, Route, and Washout Context",
+        "relationship": "supports",
+        "whyItMatters": "Prednisone dose, route and full protocol restriction context are not documented.",
+        "sourceIds": [
+          "medication-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:lab-demo.pdf",
+        "to": "link:Laboratory Abnormalities and Safety Events",
+        "relationship": "Directly correlates abnormal lab findings with documented safety safety events.",
+        "whyItMatters": "Confirms presence of elevated liver enzymes, neutropenia, and anemia across both lab reports and safety listings.",
+        "sourceIds": [
+          "lab-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:safety-demo.pdf",
+        "to": "link:Laboratory Abnormalities and Safety Events",
+        "relationship": "Directly correlates abnormal lab findings with documented safety safety events.",
+        "whyItMatters": "Confirms presence of elevated liver enzymes, neutropenia, and anemia across both lab reports and safety listings.",
+        "sourceIds": [
+          "safety-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:medication-demo.pdf",
+        "to": "link:Medication History and Exclusions",
+        "relationship": "Links recent prednisone use with missing washout and protocol exclusion rules.",
+        "whyItMatters": "Unresolved steroid washout could impact eligibility under protocol exclusion guidelines.",
+        "sourceIds": [
+          "medication-demo.pdf"
+        ]
+      },
+      {
+        "from": "source:protocol-demo.pdf",
+        "to": "link:Medication History and Exclusions",
+        "relationship": "Links recent prednisone use with missing washout and protocol exclusion rules.",
+        "whyItMatters": "Unresolved steroid washout could impact eligibility under protocol exclusion guidelines.",
+        "sourceIds": [
+          "protocol-demo.pdf"
+        ]
+      }
+    ]
+  }
+}
