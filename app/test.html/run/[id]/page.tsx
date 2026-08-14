@@ -1,0 +1,51 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, CheckCircle2, Clock3, Download, FileWarning, FlaskConical, Loader2, XCircle } from "lucide-react";
+
+type TestCase = { id: number; name: string; passed: boolean; durationMs: number; error?: string };
+type Report = { id: string; startedAt: string; completedAt: string; durationMs: number; status: "PASS" | "FAIL"; total: number; passed: number; failed: number; result: any; tests: TestCase[]; error?: string };
+
+function formatDate(value: string) { return new Date(value).toLocaleString([], { dateStyle: "full", timeStyle: "medium" }); }
+function duration(ms: number) { return `${(ms / 1000).toFixed(1)}s`; }
+
+export default function TestRunPage({ params }: { params: Promise<{ id: string }> }) {
+  const [report, setReport] = useState<Report | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    params.then(({ id }) => fetch(`/api/test-suite/history/${encodeURIComponent(id)}`, { cache: "no-store" }).then(async (r) => {
+      const payload = await r.json();
+      if (!r.ok) throw new Error(payload.error || "Run not found");
+      setReport(payload.report);
+    }).catch((e) => setError(e instanceof Error ? e.message : "Unable to load run.")));
+  }, [params]);
+
+  if (error) return <main className="min-h-screen bg-[#f7f8fa] p-10"><div className="mx-auto max-w-3xl rounded-2xl border border-red-200 bg-red-50 p-8"><h1 className="text-xl font-bold text-red-950">Run unavailable</h1><p className="mt-2 text-sm text-red-800">{error}</p><Link href="/test.html" className="mt-5 inline-flex font-semibold text-red-900 underline">Back to test suite</Link></div></main>;
+  if (!report) return <main className="grid min-h-screen place-items-center bg-[#f7f8fa]"><Loader2 className="animate-spin text-blue-700"/></main>;
+
+  const rate = report.total ? (report.passed / report.total) * 100 : 0;
+  const failedTests = report.tests.filter((test) => !test.passed);
+
+  return <main className="min-h-screen bg-[#f7f8fa] text-slate-950">
+    <div className="mx-auto max-w-6xl px-6 py-10 md:px-10 md:py-14">
+      <div className="flex flex-wrap items-center justify-between gap-4"><Link href="/test.html" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950"><ArrowLeft size={16}/> Test suite</Link><span className="font-mono text-xs text-slate-400">{report.id}</span></div>
+      <header className="mt-8 border-b border-slate-200 pb-8"><div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between"><div><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-700"><FlaskConical size={15}/> TrialIQ / AI quality run</div><h1 className="mt-3 text-4xl font-bold tracking-tight">{report.status === "PASS" ? "Benchmark passed" : "Benchmark failed"}</h1><p className="mt-3 text-sm text-slate-500">{formatDate(report.startedAt)}</p></div><div className={`rounded-2xl border px-6 py-4 ${report.status === "PASS" ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}><p className={`text-3xl font-bold ${report.status === "PASS" ? "text-emerald-700" : "text-red-700"}`}>{rate.toFixed(0)}%</p><p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Pass rate</p></div></div></header>
+
+      <section className="mt-8 grid gap-4 md:grid-cols-4"><Stat label="Passed" value={`${report.passed}`} tone="good"/><Stat label="Failed" value={`${report.failed}`} tone={report.failed ? "bad" : "neutral"}/><Stat label="Total gates" value={`${report.total}`} tone="neutral"/><Stat label="Duration" value={duration(report.durationMs)} tone="neutral"/></section>
+
+      {report.error && <section className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6"><div className="flex gap-3"><FileWarning className="text-red-700"/><div><h2 className="font-bold text-red-950">Run error</h2><pre className="mt-3 whitespace-pre-wrap break-words rounded-xl bg-red-950 p-4 font-mono text-xs leading-5 text-red-50">{report.error}</pre></div></div></section>}
+
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><div><h2 className="font-bold">25 quality gates</h2><p className="mt-1 text-sm text-slate-500">Each assertion is independently reported so regressions are easy to locate.</p></div><span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500"><Clock3 size={14}/>{formatDate(report.completedAt)}</span></div><div className="divide-y divide-slate-100">
+        {report.tests.map((test) => <div key={test.id} className="flex gap-4 px-6 py-4"><div className="mt-0.5">{test.passed ? <CheckCircle2 size={19} className="text-emerald-600"/> : <XCircle size={19} className="text-red-600"/>}</div><div className="min-w-0 flex-1"><div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between"><p className="font-semibold text-slate-900"><span className="mr-2 font-mono text-xs text-slate-400">{String(test.id).padStart(2,"0")}</span>{test.name}</p><span className="text-xs text-slate-400">{test.durationMs}ms</span></div>{test.error && <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-red-50 p-3 font-mono text-xs leading-5 text-red-700">{test.error}</pre>}</div></div>)}
+      </div></section>
+
+      {failedTests.length === 0 ? <section className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900"><strong>All 25 gates passed.</strong> This run is a clean quality baseline for future product changes.</section> : null}
+
+      <details className="mt-6 rounded-2xl border border-slate-200 bg-white p-6"><summary className="cursor-pointer font-semibold">Show captured AI result</summary><pre className="mt-4 max-h-[600px] overflow-auto rounded-xl bg-slate-950 p-5 font-mono text-xs leading-5 text-slate-100">{JSON.stringify(report.result, null, 2)}</pre></details>
+      <p className="mt-8 text-xs leading-5 text-slate-400">Run ID: {report.id}. Stored locally under <code>test-reports/web-runs/</code> so subsequent sessions can be compared from the test suite.</p>
+    </div>
+  </main>;
+}
+function Stat({label,value,tone}:{label:string;value:string;tone:"good"|"bad"|"neutral"}) { const cls=tone==="good"?"border-emerald-200 bg-emerald-50 text-emerald-700":tone==="bad"?"border-red-200 bg-red-50 text-red-700":"border-slate-200 bg-white text-slate-950"; return <div className={`rounded-2xl border p-5 shadow-sm ${cls}`}><p className="text-xs font-bold uppercase tracking-wide opacity-70">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div>; }
