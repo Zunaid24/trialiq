@@ -11,7 +11,12 @@ type ReviewInput = {
     passed: boolean;
     durationMs: number;
     error?: string;
-    evidence?: { url?: string; visibleText?: string; screenshotBase64?: string };
+    evidence?: {
+      url?: string;
+      visibleText?: string;
+      controls?: string[];
+      screenshotBase64?: string;
+    };
   }>;
   aiResult?: unknown;
 };
@@ -61,11 +66,23 @@ export async function reviewQualitySuite(input: ReviewInput) {
   if (!process.env.GEMINI_API_KEY) return { status: "SKIPPED", reason: "GEMINI_API_KEY is not configured for the AI review layer.", model: MODEL, overallScore: null, reviews: [] };
 
   const system = `
-You are TrialIQ's AI Quality Reviewer. Playwright establishes whether an automated requirement passed; you evaluate whether the tested experience is clear, efficient, accessible, trustworthy and improvable.
+You are TrialIQ's AI Quality Reviewer. Playwright establishes whether an automated requirement passed; you evaluate whether the tested product experience is actually good and what should be improved.
 
-Do not invent product behavior. Review only supplied test facts, visible UI text, screenshots and AI output. A passing assertion does not mean the experience is good. A failed assertion is a factual failure and should not be reframed as a UX preference.
+IMPORTANT DIAGNOSIS RULE:
+A failing automated test is NOT automatically an AI defect. A passing automated test is NOT automatically a good product experience.
+For every test, determine the most likely ROOT CAUSE LAYER from exactly one of:
+- AI_OUTPUT: the model's reasoning/content/evidence interpretation is wrong, unsupported, unsafe or incomplete.
+- UI: the underlying product UI does not correctly expose, present or support otherwise-correct behavior/output.
+- FLOW: the user journey, interaction sequence, state handling or navigation makes a correct capability difficult, blocked or confusing.
+- TEST: the Playwright assertion/selector/test expectation is incorrect or too broad for the actual product behavior.
+- INFRASTRUCTURE: environment, provider quota, network, authentication, runner or other infrastructure caused the failure.
+- NONE: no meaningful defect is supported by the supplied evidence.
 
-For UI suites, review visual hierarchy, task clarity, interaction flow, accessibility cues, content clarity, feedback/state handling, cognitive load and reviewer efficiency. For AI suites, review evidence grounding, reasoning quality, uncertainty, decision usefulness, traceability and operational usefulness.
+For AI suites, if the AI output is correct but the product presentation or user journey is deficient, recommend changing the UI or FLOW rather than changing good AI behavior. Only recommend AI_OUTPUT changes when the supplied model output itself is deficient.
+For UI suites, inspect screenshots, visible text, controls, URLs and test errors. Review visual hierarchy, task clarity, interaction flow, accessibility cues, content clarity, feedback/state handling, cognitive load and reviewer efficiency.
+For AI suites, inspect the captured AI result for evidence grounding, reasoning quality, uncertainty, decision usefulness, traceability and operational usefulness. When a test fails, compare the assertion failure with the actual captured result before assigning root cause.
+Never invent UI behavior, AI behavior, evidence or screenshots. If the supplied evidence cannot establish a root cause, use NONE and say what evidence is missing.
+Recommendations must target the selected rootCauseLayer. Do not recommend modifying a correct AI output merely to make a test pass.
 
 Return ONLY valid JSON:
 {
@@ -77,17 +94,23 @@ Return ONLY valid JSON:
     "testId":0,
     "score":0,
     "verdict":"Strong | Good | Needs Improvement | Critical",
+    "rootCauseLayer":"AI_OUTPUT | UI | FLOW | TEST | INFRASTRUCTURE | NONE",
+    "rootCauseConfidence":0,
+    "isProductDefect":true,
     "strengths":[""],
     "issues":[{"severity":"High | Medium | Low","issue":"","evidence":""}],
-    "recommendations":[{"priority":"P0 | P1 | P2","recommendation":"","expectedImpact":""}],
+    "recommendations":[{"priority":"P0 | P1 | P2","layer":"AI_OUTPUT | UI | FLOW | TEST | INFRASTRUCTURE","recommendation":"","expectedImpact":""}],
     "reviewNotes":""
   }]
 }
 
-Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 critical. Focus on product quality revealed by the evidence.`;
+Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 critical. Use rootCauseLayer NONE when the test is healthy and no supported improvement is necessary. Use TEST when the assertion itself is the problem. Use UI/FLOW when correct AI behavior is poorly presented or hard to use. Use AI_OUTPUT only when the model result itself is wrong or deficient.`;
 
   const parts: Array<Record<string, unknown>> = [{
-    text: `${system}\n\nSUITE:\n${input.suite}\n\nTEST DATA:\n${JSON.stringify(input.tests.map(({ evidence, ...test }) => ({ ...test, evidence: evidence ? { url: evidence.url, visibleText: evidence.visibleText } : undefined })), null, 2)}\n\nAI RESULT (when available):\n${JSON.stringify(input.aiResult ?? null, null, 2)}`,
+    text: `${system}\n\nSUITE:\n${input.suite}\n\nTEST DATA:\n${JSON.stringify(input.tests.map(({ evidence, ...test }) => ({
+      ...test,
+      evidence: evidence ? { url: evidence.url, visibleText: evidence.visibleText, controls: evidence.controls } : undefined,
+    })), null, 2)}\n\nAI RESULT (when available):\n${JSON.stringify(input.aiResult ?? null, null, 2)}`,
   }];
 
   for (const test of input.tests) {
@@ -115,7 +138,7 @@ Score guidance: 90-100 excellent, 80-89 good, 70-79 needs improvement, below 70 
         reviews: [],
         error: quotaSummary(error, retryAfterSeconds),
         retryAfterSeconds,
-        overallSummary: "The deterministic test suite completed successfully, but the optional AI review layer was unavailable because the Gemini quota is exhausted. No test result was changed or retried.",
+        overallSummary: "The deterministic test suite completed, but the optional AI review layer was unavailable because the Gemini quota is exhausted. No test result was changed or retried.",
       };
     }
 
