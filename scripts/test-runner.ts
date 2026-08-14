@@ -2,14 +2,14 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import dotenv from "dotenv";
 import { getTestRunnerStore, getTestRunnerConfig } from "../lib/testRunStore";
 
-async function main() {
-  try {
-    process.loadEnvFile?.(".env");
-    process.loadEnvFile?.(".env.local");
-  } catch {}
+// Load the local runner environment explicitly. Do not rely on tsx/Node's implicit env loading.
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: false });
 
+async function main() {
   const { reviewQualitySuite } = await import("../lib/testAiReviewer");
   const store = getTestRunnerStore();
   const { baseUrl, runnerId, pollMs } = getTestRunnerConfig();
