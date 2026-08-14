@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Clock3, FileWarning, FlaskConical, Loader2, Sparkles, Terminal, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileWarning, FlaskConical, Loader2, Sparkles, Terminal, XCircle } from "lucide-react";
 
 type TestCase = { id: number; name: string; passed: boolean; durationMs: number; error?: string };
 type Review = {
@@ -94,6 +94,6 @@ export default function TestRunPage({ params }: { params: Promise<{ id: string }
     </div>
   </main>;
 }
-function Stat({label,value,tone}:{label:string;value:string;tone:"good"|"bad"|"neutral"}) { const cls=tone==="good"?"border-emerald-200 bg-emerald-50 text-emerald-700":tone==="bad"?"border-red-200 bg-red-50 text-red-700":"border-slate-200 bg-white text-slate-950"; return <div className={`rounded-2xl border p-5 shadow-sm ${cls}`}><p className="text-xs font-bold uppercase tracking-wide opacity-70">${label}</p><p className="mt-2 text-2xl font-bold">${value}</p></div>; }
-function Score({label,value,good}:{label:string;value:string;good:boolean}) { return <div className={`rounded-2xl border px-5 py-4 ${good ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}><p className="text-xs font-bold uppercase tracking-wide text-slate-500">${label}</p><p className="mt-1 text-2xl font-bold">${value}</p></div>; }
-function DiagnosisMetric({label,value,tone}:{label:string;value:number;tone:"purple"|"blue"|"amber"|"red"|"green"}) { const cls=tone==="purple"?"border-purple-200 bg-purple-50 text-purple-700":tone==="blue"?"border-blue-200 bg-blue-50 text-blue-700":tone==="amber"?"border-amber-200 bg-amber-50 text-amber-700":tone==="red"?"border-red-200 bg-red-50 text-red-700":"border-emerald-200 bg-emerald-50 text-emerald-700"; return <div className={`rounded-2xl border p-4 ${cls}`}><p className="text-xs font-bold uppercase tracking-wide opacity-70">${label}</p><p className="mt-1 text-2xl font-bold">${value}</p></div>; }
+function Stat({label,value,tone}:{label:string;value:string;tone:"good"|"bad"|"neutral"}) { const cls=tone==="good"?"border-emerald-200 bg-emerald-50 text-emerald-700":tone==="bad"?"border-red-200 bg-red-50 text-red-700":"border-slate-200 bg-white text-slate-950"; return <div className={`rounded-2xl border p-5 shadow-sm ${cls}`}><p className="text-xs font-bold uppercase tracking-wide opacity-70">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div>; }
+function Score({label,value,good}:{label:string;value:string;good:boolean}) { return <div className={`rounded-2xl border px-5 py-4 ${good ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></div>; }
+function DiagnosisMetric({label,value,tone}:{label:string;value:number;tone:"purple"|"blue"|"amber"|"red"|"green"}) { const cls=tone==="purple"?"border-purple-200 bg-purple-50 text-purple-700":tone==="blue"?"border-blue-200 bg-blue-50 text-blue-700":tone==="amber"?"border-amber-200 bg-amber-50 text-amber-700":tone==="red"?"border-red-200 bg-red-50 text-red-700":"border-emerald-200 bg-emerald-50 text-emerald-700"; return <div className={`rounded-2xl border p-4 ${cls}`}><p className="text-xs font-bold uppercase tracking-wide opacity-70">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></div>; }
