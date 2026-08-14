@@ -82,7 +82,26 @@ test.describe("TrialIQ AI output quality benchmark", () => {
   test("09 — protocol impact is represented separately", () => expect(result.protocolImpact).toBeTruthy());
   test("10 — safety assessment is represented separately", () => expect(result.safetyAssessment).toBeTruthy());
   test("11 — cross-document relationships are explicit", () => expect(Array.isArray(result.crossDocumentLinks)).toBeTruthy());
-  test("12 — single-participant evidence is not promoted to population incidence", () => expect(JSON.stringify(result).toLowerCase()).not.toMatch(/population[- ]level (incidence|rate|signal) established/));
+
+  test("12 — single-participant evidence is not promoted to population incidence", () => {
+    const text = JSON.stringify(result).toLowerCase();
+
+    // Reject an actual population-level conclusion, while allowing the model
+    // to explicitly state that such a conclusion has NOT been established.
+    expect(text).not.toMatch(
+      /population[- ]level (incidence|rate|signal) (is|was|has been) established/
+    );
+
+    // Require explicit single-participant framing.
+    expect(text).toMatch(/single[- ]participant/);
+
+    // Require the model to acknowledge that population-level inference is not
+    // supported by the available evidence.
+    expect(text).toMatch(
+      /does not (establish|support|permit).{0,100}population[- ]level/
+    );
+  });
+
   test("13 — temporal association is not presented as causality", () => expect(JSON.stringify(result).toLowerCase()).not.toMatch(/proves? .*causality|confirmed .*causal relationship/));
 
   test("14 — undocumented eligibility evidence remains reviewable", () => {
