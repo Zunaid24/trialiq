@@ -3,12 +3,12 @@ import { test, expect } from "@playwright/test";
 type Intelligence = any;
 let result: Intelligence;
 
-// This suite intentionally focuses on AI output quality rather than navigation or button mechanics.
-// One authenticated live model call feeds 25 independent quality gates.
+// This suite uses the visible TrialIQ browser flow so the benchmark exercises
+// the same authenticated UI and browser session as a real reviewer.
 test.describe("TrialIQ AI output quality benchmark", () => {
+  test.setTimeout(120_000);
+
   test.beforeAll(async ({ browser }) => {
-    const baseURL =
-      process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
     const email = process.env.PLAYWRIGHT_EMAIL;
     const password = process.env.PLAYWRIGHT_PASSWORD;
 
@@ -18,41 +18,40 @@ test.describe("TrialIQ AI output quality benchmark", () => {
       );
     }
 
-    const context = await browser.newContext({ baseURL });
+    const context = await browser.newContext();
     const page = await context.newPage();
 
     try {
-      // Authenticate through the real TrialIQ UI so the Supabase session
-      // established by the browser is available to the protected API route.
+      // Authenticate through the real TrialIQ UI.
       await page.goto("/auth");
       await page.getByLabel(/email/i).fill(email);
       await page.getByLabel(/password/i).fill(password);
       await page.getByRole("button", { name: /sign in/i }).click();
-
-      // The auth flow can take longer than the default 5s assertion timeout
-      // when the local Next.js/Supabase stack is warming up.
       await page.waitForURL(/\/dashboard/, { timeout: 15_000 });
 
-      const sourceResponse = await context.request.get(
-        "/demo/clinical-intelligence-evidence.json"
-      );
-      expect(sourceResponse.ok()).toBeTruthy();
-
-      const evidencePack = await sourceResponse.json();
-
-      const response = await context.request.post(
-        "/api/clinical-intelligence",
-        {
-          data: { evidencePack },
-        }
+      // Use the real Clinical Intelligence page. The page itself fetches the
+      // evidence pack and calls the protected AI endpoint from the browser.
+      // Capture that browser response rather than issuing a separate API call.
+      const responsePromise = page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/clinical-intelligence") &&
+          response.request().method() === "POST",
+        { timeout: 105_000 }
       );
 
+      await page.goto("/dashboard/clinical-intelligence");
+
+      const response = await responsePromise;
       expect(response.ok()).toBeTruthy();
 
       const payload = await response.json();
       expect(payload.success).toBeTruthy();
-
       result = payload.result;
+
+      // Confirm the AI result is actually rendered in the visible browser.
+      await expect(page.getByText(/Priority findings/i)).toBeVisible({
+        timeout: 10_000,
+      });
     } finally {
       await context.close();
     }
@@ -100,21 +99,21 @@ test.describe("TrialIQ AI output quality benchmark", () => {
     )
   );
 
-  test("08 — missing evidence is surfaced", () =>
+  test("08 — missing evidence is surfaced", () => {
     expect(Array.isArray(result.dataGaps)).toBeTruthy()
-  );
+  });
 
-  test("09 — protocol impact is represented separately", () =>
+  test("09 — protocol impact is represented separately", () => {
     expect(result.protocolImpact).toBeTruthy()
-  );
+  });
 
-  test("10 — safety assessment is represented separately", () =>
+  test("10 — safety assessment is represented separately", () => {
     expect(result.safetyAssessment).toBeTruthy()
-  );
+  });
 
-  test("11 — cross-document relationships are explicit", () =>
+  test("11 — cross-document relationships are explicit", () => {
     expect(Array.isArray(result.crossDocumentLinks)).toBeTruthy()
-  );
+  });
 
   test("12 — single-participant evidence is not promoted to population incidence", () => {
     const text = JSON.stringify(result).toLowerCase();
