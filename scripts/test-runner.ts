@@ -22,6 +22,17 @@ async function main() {
     return new Date().toISOString().replace("T", "_").replace(/:/g, "-").replace(/\.\d{3}Z$/, "Z");
   }
 
+  function errorMessage(error: unknown) {
+    if (error instanceof Error) return error.stack || error.message;
+    if (typeof error === "string") return error;
+    try {
+      const serialized = JSON.stringify(error);
+      return serialized === undefined ? String(error) : serialized;
+    } catch {
+      return String(error);
+    }
+  }
+
   async function runPlaywright(spec: string, env: NodeJS.ProcessEnv) {
     return new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
       // On Windows, .cmd shims such as npx.cmd cannot be spawned reliably with shell:false.
@@ -43,7 +54,7 @@ async function main() {
       const finish = (code: number) => { if (settled) return; settled = true; resolve({ code, stdout, stderr }); };
       child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
       child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
-      child.on("error", (error) => { stderr += `\n[runner spawn error] ${error.message}`; finish(1); });
+      child.on("error", (error) => { stderr += `\n[runner spawn error] ${errorMessage(error)}`; finish(1); });
       child.on("close", (code) => finish(code ?? 1));
     });
   }
@@ -120,7 +131,7 @@ async function main() {
       try {
         aiReview = await reviewQualitySuite({ suite: suiteName, tests: evidenceTests, aiResult: suiteResult });
       } catch (error) {
-        aiReview = { status: "ERROR", model: process.env.TEST_REVIEW_MODEL || "gemini-3.6-flash", overallScore: null, overallSummary: "Automated tests completed, but the AI review layer failed.", reviews: [], error: error instanceof Error ? error.message : String(error) };
+        aiReview = { status: "ERROR", model: process.env.TEST_REVIEW_MODEL || "gemini-3.6-flash", overallScore: null, overallSummary: "Automated tests completed, but the AI review layer failed.", reviews: [], error: errorMessage(error) };
       }
 
       const completed = new Date();
@@ -140,9 +151,13 @@ async function main() {
       await store.from("test_run_jobs").update({ status: "COMPLETED", completed_at: completed.toISOString(), run_id: run.id, error: null }).eq("id", job.id);
       console.log(`[TrialIQ] ${suiteName}: ${runStatus} (${passed}/${total}) · run ${run.id}`);
     } catch (error) {
-      const message = error instanceof Error ? error.stack || error.message : String(error);
-      await store.from("test_run_jobs").update({ status: "FAILED", completed_at: new Date().toISOString(), error: message }).eq("id", job.id);
-      console.error(`[TrialIQ] Job ${job.id} failed:`, message);
+      const message = errorMessage(error);
+      try {
+        await store.from("test_run_jobs").update({ status: "FAILED", completed_at: new Date().toISOString(), error: message }).eq("id", job.id);
+      } catch (updateError) {
+        console.error(`[TrialIQ] Failed to persist job failure: ${errorMessage(updateError)}`);
+      }
+      console.error(`[TrialIQ] Job ${job.id} failed: ${message}`);
     } finally {
       await fs.rm(jobDir, { recursive: true, force: true }).catch(() => undefined);
     }
@@ -162,13 +177,13 @@ async function main() {
         console.warn("[TrialIQ] Ignoring malformed job returned by claim_test_run_job:", JSON.stringify(job));
       }
     } catch (error) {
-      console.error("[TrialIQ] Polling error:", error instanceof Error ? error.message : String(error));
+      console.error("[TrialIQ] Polling error:", errorMessage(error));
     }
     await sleep(pollMs);
   }
 }
 
 main().catch((error) => {
-  console.error("[TrialIQ] Fatal runner error:", error instanceof Error ? error.stack || error.message : String(error));
+  console.error("[TrialIQ] Fatal runner error:", errorMessage(error));
   process.exitCode = 1;
 });
