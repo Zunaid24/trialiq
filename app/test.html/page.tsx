@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Activity, ArrowRight, CheckCircle2, Clock3, Eye, FlaskConical, History, Loader2, Play, ShieldCheck, Sparkles, StopCircle, XCircle } from "lucide-react";
+import LocalEnvironment from "./LocalEnvironment";
 
 type HistoryItem = {
   id: string;
@@ -104,6 +105,8 @@ export default function TestSuitePage() {
           </div>
           <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"><Sparkles size={16} className="text-blue-700"/> Headless + AI reviewed</div>
         </header>
+
+        <LocalEnvironment />
 
         {queued.length > 0 && <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5"><div className="flex items-start gap-3"><Loader2 className="mt-0.5 animate-spin text-blue-700" size={19}/><div><p className="font-bold text-blue-950">{queued.length} run{queued.length === 1 ? "" : "s"} active in the local queue</p><p className="mt-1 text-sm text-blue-800">The local Playwright runner processes these jobs against localhost:3000. Running jobs can be terminated from the history below; the runner then kills the Playwright process and releases the queue.</p></div></div></div>}
         {error && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><strong>Test suite message:</strong> {error}</div>}
