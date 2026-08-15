@@ -12,17 +12,6 @@ export async function POST(request: NextRequest) {
     const suite: Suite = body?.suite === "ui" ? "ui" : "ai";
     const store = getTestRunStore();
 
-    const { data: activeJobs, error: activeError } = await store
-      .from("test_run_jobs")
-      .select("id,suite,status")
-      .in("status", ["QUEUED", "RUNNING"])
-      .limit(1);
-
-    if (activeError) throw activeError;
-    if (activeJobs?.length) {
-      return NextResponse.json({ ok: false, error: "A quality run is already queued or running. Open its result page or wait for it to finish." }, { status: 409 });
-    }
-
     const { data, error } = await store
       .from("test_run_jobs")
       .insert({
