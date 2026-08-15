@@ -16,7 +16,7 @@ export async function GET() {
       store
         .from("test_run_jobs")
         .select("id,suite,status,requested_at,started_at,completed_at,run_id,error,metadata")
-        .in("status", ["QUEUED", "RUNNING", "FAILED", "CANCELLED", "TERMINATED"])
+        .in("status", ["QUEUED", "RUNNING", "FAILED"])
         .order("requested_at", { ascending: false })
         .limit(100),
     ]);
