@@ -39,7 +39,7 @@ export async function GET() {
       store
         .from("test_run_jobs")
         .select("id,suite,status,requested_at,started_at,completed_at,run_id,error")
-        .in("status", ["QUEUED", "RUNNING"])
+        .in("status", ["QUEUED", "RUNNING", "CANCEL_REQUESTED", "CANCELLED"])
         .order("requested_at", { ascending: false })
         .limit(50),
     ]);
@@ -81,7 +81,9 @@ export async function GET() {
       startedAt: job.started_at || job.requested_at,
       completedAt: job.completed_at || job.requested_at,
       requestedAt: job.requested_at,
-      durationMs: 0,
+      durationMs: job.started_at && job.completed_at
+        ? Math.max(0, new Date(job.completed_at).getTime() - new Date(job.started_at).getTime())
+        : 0,
       status: job.status,
       total: 0,
       passed: 0,
