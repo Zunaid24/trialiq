@@ -11,7 +11,8 @@
     "test:smoke": "playwright test tests/e2e/smoke.spec.ts --project=chromium",
     "test:ui": "playwright test tests/e2e/ui-quality.spec.ts --project=chromium",
     "test:ai": "node scripts/run-ai-quality.mjs",
-    "test:runner": "npx --yes tsx scripts/test-runner.ts"
+    "test:runner": "npx --yes tsx scripts/test-runner.ts",
+    "test:bridge": "npx --yes tsx scripts/local-runner-bridge.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
