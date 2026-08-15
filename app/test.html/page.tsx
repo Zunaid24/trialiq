@@ -32,8 +32,6 @@ const suites: Array<{ key: SuiteKey; title: string; description: string; count: 
   { key: "ui", title: "UI Quality", description: "Playwright behavior plus AI visual, UX, accessibility and flow review.", count: "12 tests" },
 ];
 
-const LOCAL_RUNNER_BRIDGE = "http://127.0.0.1:45821";
-
 export default function TestSuitePage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [running, setRunning] = useState<SuiteKey | null>(null);
@@ -56,26 +54,11 @@ export default function TestSuitePage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  async function startLocalRunner() {
-    try {
-      const response = await fetch(`${LOCAL_RUNNER_BRIDGE}/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload?.ok) throw new Error(payload?.error || "Local runner bridge could not start the runner.");
-      return payload;
-    } catch {
-      throw new Error("Local runner is not available. Start it once with `npm run test:bridge` from the TrialIQ project, then click Run Test again.");
-    }
-  }
-
   async function startTest(suite: SuiteKey) {
     if (running) return;
     setRunning(suite);
     setError("");
     try {
-      await startLocalRunner();
       const response = await fetch("/api/test-suite/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ suite }) });
       const payload = await response.json();
       if (!response.ok || !payload?.job?.id) throw new Error(payload?.error || "Unable to queue test suite.");
@@ -139,7 +122,7 @@ export default function TestSuitePage() {
             return <div key={suite.key} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Quality layer</p><h2 className="mt-2 text-xl font-bold">{suite.title}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">{suite.description}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{suite.count}</span></div>
               <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Metric label="Latest" value={latestSuite ? `${latestSuite.passed}/${latestSuite.total}` : "—"}/><Metric label="AI review" value={latestSuite?.aiReview?.overallScore != null ? `${latestSuite.aiReview.overallScore}` : "—"}/><Metric label="Runs" value={String(suiteHistory.length)}/></div>
-              <button onClick={() => startTest(suite.key)} disabled={!!running} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60">{running === suite.key ? <Loader2 size={16} className="animate-spin"/> : <Play size={16} fill="currentColor"/>}{running === suite.key ? "Starting local runner…" : `Run ${suite.title}`}</button>
+              <button onClick={() => startTest(suite.key)} disabled={!!running} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60">{running === suite.key ? <Loader2 size={16} className="animate-spin"/> : <Play size={16} fill="currentColor"/>}{running === suite.key ? "Queuing test…" : `Run ${suite.title}`}</button>
             </div>;
           })}
         </section>
@@ -166,7 +149,7 @@ export default function TestSuitePage() {
           </div>}
         </section>
 
-        <p className="mt-8 text-xs leading-5 text-slate-400">Playwright runs locally on your machine. The deployed page starts the local runner through the TrialIQ localhost bridge, queues the job in Supabase, and the runner executes against localhost:3000. Credentials stay in local environment configuration.</p>
+        <p className="mt-8 text-xs leading-5 text-slate-400">Playwright runs locally on your machine. Run Test only queues the job in Supabase; the local test runner polls the queue and executes against localhost:3000. Credentials stay in local environment configuration.</p>
       </div>
     </main>
   );
