@@ -12,7 +12,8 @@
     "test:ui": "playwright test tests/e2e/ui-quality.spec.ts --project=chromium",
     "test:ai": "node scripts/run-ai-quality.mjs",
     "test:runner": "npx --yes tsx scripts/test-runner.ts",
-    "test:bridge": "npx --yes tsx scripts/local-runner-bridge.ts"
+    "test:bridge": "npx --yes tsx scripts/local-runner-bridge.ts",
+    "local:agent": "npx --yes tsx scripts/local-agent.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
