@@ -8,6 +8,17 @@ import { getTestRunnerStore, getTestRunnerConfig } from "../lib/testRunStore";
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: false });
 
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return error.stack || error.message;
+  if (typeof error === "string") return error;
+  try {
+    const serialized = JSON.stringify(error);
+    return serialized === undefined ? String(error) : serialized;
+  } catch {
+    return String(error);
+  }
+}
+
 async function main() {
   const { reviewQualitySuite } = await import("../lib/testAiReviewer");
   const store = getTestRunnerStore();
@@ -20,17 +31,6 @@ async function main() {
 
   function runId() {
     return new Date().toISOString().replace("T", "_").replace(/:/g, "-").replace(/\.\d{3}Z$/, "Z");
-  }
-
-  function errorMessage(error: unknown) {
-    if (error instanceof Error) return error.stack || error.message;
-    if (typeof error === "string") return error;
-    try {
-      const serialized = JSON.stringify(error);
-      return serialized === undefined ? String(error) : serialized;
-    } catch {
-      return String(error);
-    }
   }
 
   function normalizeConfidence(value: unknown) {
