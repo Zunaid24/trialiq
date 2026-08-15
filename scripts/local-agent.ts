@@ -46,22 +46,45 @@ function gitStatus(): Promise<{ branch: string; commit: string }> {
   });
 }
 
+function terminateProcess(child: ChildProcess) {
+  const pid = child.pid;
+  if (!pid) return;
+  if (process.platform === "win32") {
+    execFile("taskkill", ["/PID", String(pid), "/T", "/F"], () => undefined);
+  } else {
+    child.kill("SIGTERM");
+  }
+}
+
 async function startSite() {
   if (await checkSite()) return { ok: true, alreadyRunning: true, live: true };
 
   if (siteProcess && !siteProcess.killed) return { ok: true, alreadyStarting: true, live: false };
 
   siteStartError = "";
-  const command = process.platform === "win32" ? "npm.cmd" : "npm";
 
   let child: ChildProcess;
   try {
-    child = spawn(command, ["run", "dev", "--", "--hostname", HOST, "--port", String(SITE_PORT)], {
-      cwd: PROJECT_DIR,
-      detached: false,
-      windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    if (process.platform === "win32") {
+      // npm.cmd is a Windows command shim. Starting it through cmd.exe keeps the
+      // long-running Next.js process attached to a process tree we can terminate.
+      child = spawn(
+        "cmd.exe",
+        ["/d", "/s", "/c", `npm run dev -- --hostname ${HOST} --port ${SITE_PORT}`],
+        {
+          cwd: PROJECT_DIR,
+          detached: false,
+          windowsHide: true,
+          stdio: ["ignore", "pipe", "pipe"],
+        },
+      );
+    } else {
+      child = spawn("npm", ["run", "dev", "--", "--hostname", HOST, "--port", String(SITE_PORT)], {
+        cwd: PROJECT_DIR,
+        detached: false,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    }
   } catch (error) {
     return {
       ok: false,
@@ -85,44 +108,24 @@ async function startSite() {
     }
   });
 
-  const processError = new Promise<Error | null>((resolve) => {
-    child.once("error", resolve);
+  child.on("error", (error) => {
+    siteStartError = error.message;
+    console.error(`[TrialIQ][Next.js] Process error: ${error.message}`);
   });
 
   child.on("exit", (code, signal) => {
     if (code !== 0 && !siteStartError) {
-      siteStartError = `Next.js exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}.`;
+      siteStartError = `Next.js process exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}.`;
     }
     if (siteProcess === child) siteProcess = null;
   });
 
-  const started = await waitForSite(15000);
+  const started = await waitForSite(20000);
   if (!started) {
-    const startupError = await Promise.race([
-      processError,
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 0)),
-    ]);
-
-    try {
-      if (process.platform === "win32" && child.pid) {
-        execFile("taskkill", ["/PID", String(child.pid), "/T", "/F"], () => undefined);
-      } else {
-        child.kill("SIGTERM");
-      }
-    } catch {
-      // Process may already have exited.
-    }
-
+    const error = siteStartError || `Next.js did not become available on http://${HOST}:${SITE_PORT} within 20 seconds.`;
+    terminateProcess(child);
     if (siteProcess === child) siteProcess = null;
-
-    return {
-      ok: false,
-      live: false,
-      error:
-        startupError?.message ||
-        siteStartError ||
-        `Next.js did not become available on http://${HOST}:${SITE_PORT} within 15 seconds.`,
-    };
+    return { ok: false, live: false, error };
   }
 
   return { ok: true, alreadyRunning: false, live: true, pid: child.pid ?? null };
@@ -143,11 +146,7 @@ async function stopSite() {
   }
 
   const pid = siteProcess.pid;
-  if (process.platform === "win32" && pid) {
-    execFile("taskkill", ["/PID", String(pid), "/T", "/F"], () => undefined);
-  } else {
-    siteProcess.kill("SIGTERM");
-  }
+  terminateProcess(siteProcess);
   siteProcess = null;
   return { ok: true, pid };
 }
