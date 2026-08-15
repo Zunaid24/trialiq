@@ -8,6 +8,12 @@ const PROJECT_DIR = process.env.TRIALIQ_PROJECT_DIR || process.cwd();
 
 let siteProcess: ChildProcess | null = null;
 let siteStartError = "";
+let gitSync: { status: string; message: string; branch: string; commit: string } = {
+  status: "checking",
+  message: "Checking GitHub for updates...",
+  branch: "unknown",
+  commit: "unknown",
+};
 
 function json(res: http.ServerResponse, status: number, body: unknown) {
   res.writeHead(status, {
@@ -19,6 +25,119 @@ function json(res: http.ServerResponse, status: number, body: unknown) {
     "Access-Control-Allow-Private-Network": "true",
   });
   res.end(JSON.stringify(body));
+}
+
+function runGit(args: string[]): Promise<{ ok: boolean; stdout: string; stderr: string }> {
+  return new Promise((resolve) => {
+    execFile("git", args, { cwd: PROJECT_DIR, windowsHide: true }, (error, stdout, stderr) => {
+      resolve({ ok: !error, stdout: String(stdout).trim(), stderr: String(stderr).trim() });
+    });
+  });
+}
+
+async function showGitPopup(message: string) {
+  if (process.platform !== "win32") return;
+  const escaped = message.replace(/'/g, "''");
+  execFile(
+    "powershell.exe",
+    [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-Command",
+      `Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show('${escaped}', 'TrialIQ Git Sync', 'OK', 'Error') | Out-Null`,
+    ],
+    { windowsHide: true },
+    () => undefined,
+  );
+}
+
+async function getGitInfo() {
+  const branch = await runGit(["branch", "--show-current"]);
+  const commit = await runGit(["rev-parse", "--short", "HEAD"]);
+  return {
+    branch: branch.ok ? branch.stdout : "unknown",
+    commit: commit.ok ? commit.stdout : "unknown",
+  };
+}
+
+async function syncGit() {
+  const info = await getGitInfo();
+  gitSync = { status: "checking", message: "Fetching origin/main...", ...info };
+
+  if (info.branch !== "main") {
+    gitSync = { status: "blocked", message: `Local branch is '${info.branch}'. Switch to main before starting TrialIQ.`, ...info };
+    await showGitPopup(gitSync.message);
+    return gitSync;
+  }
+
+  const dirty = await runGit(["status", "--porcelain"]);
+  if (!dirty.ok) {
+    gitSync = { status: "error", message: dirty.stderr || "Unable to read Git status.", ...info };
+    await showGitPopup(gitSync.message);
+    return gitSync;
+  }
+
+  if (dirty.stdout) {
+    gitSync = { status: "blocked", message: "Local changes are present. Commit or stash them before TrialIQ can pull main.", ...info };
+    await showGitPopup(gitSync.message);
+    return gitSync;
+  }
+
+  const fetched = await runGit(["fetch", "origin", "main"]);
+  if (!fetched.ok) {
+    gitSync = { status: "error", message: fetched.stderr || "Git fetch failed.", ...info };
+    await showGitPopup(gitSync.message);
+    return gitSync;
+  }
+
+  const counts = await runGit(["rev-list", "--left-right", "--count", "HEAD...origin/main"]);
+  if (!counts.ok) {
+    gitSync = { status: "error", message: counts.stderr || "Unable to compare local main with origin/main.", ...info };
+    await showGitPopup(gitSync.message);
+    return gitSync;
+  }
+
+  const [aheadText, behindText] = counts.stdout.split(/\s+/).map(Number);
+  const ahead = Number.isFinite(aheadText) ? aheadText : 0;
+  const behind = Number.isFinite(behindText) ? behindText : 0;
+
+  if (ahead > 0 && behind > 0) {
+    gitSync = {
+      status: "blocked",
+      message: `main has diverged: local is ${ahead} commit(s) ahead and ${behind} commit(s) behind origin/main. Merge/reconcile this in GitHub first.`,
+      ...info,
+    };
+    await showGitPopup(gitSync.message);
+    return gitSync;
+  }
+
+  if (ahead > 0) {
+    gitSync = {
+      status: "blocked",
+      message: `Local main is ${ahead} commit(s) ahead of origin/main. Push or reconcile the local commits before starting TrialIQ.`,
+      ...info,
+    };
+    await showGitPopup(gitSync.message);
+    return gitSync;
+  }
+
+  if (behind > 0) {
+    const pulled = await runGit(["pull", "--ff-only", "origin", "main"]);
+    if (!pulled.ok) {
+      gitSync = { status: "blocked", message: pulled.stderr || "Git pull failed. Resolve the Git state before starting TrialIQ.", ...await getGitInfo() };
+      await showGitPopup(gitSync.message);
+      return gitSync;
+    }
+  }
+
+  const updated = await getGitInfo();
+  gitSync = {
+    status: behind > 0 ? "updated" : "current",
+    message: behind > 0 ? `Local project updated from origin/main (${behind} commit(s)).` : "Local main is already up to date.",
+    ...updated,
+  };
+  return gitSync;
 }
 
 function checkSite(): Promise<boolean> {
@@ -35,17 +154,6 @@ function checkSite(): Promise<boolean> {
   });
 }
 
-function gitStatus(): Promise<{ branch: string; commit: string }> {
-  return new Promise((resolve) => {
-    execFile("git", ["branch", "--show-current"], { cwd: PROJECT_DIR }, (branchError, branch) => {
-      if (branchError) return resolve({ branch: "unknown", commit: "unknown" });
-      execFile("git", ["rev-parse", "--short", "HEAD"], { cwd: PROJECT_DIR }, (commitError, commit) => {
-        resolve({ branch: branch.trim(), commit: commitError ? "unknown" : commit.trim() });
-      });
-    });
-  });
-}
-
 function terminateProcess(child: ChildProcess) {
   const pid = child.pid;
   if (!pid) return;
@@ -57,27 +165,23 @@ function terminateProcess(child: ChildProcess) {
 }
 
 async function startSite() {
-  if (await checkSite()) return { ok: true, alreadyRunning: true, live: true };
+  if (gitSync.status === "blocked" || gitSync.status === "error") {
+    return { ok: false, live: false, error: gitSync.message, git: gitSync };
+  }
 
+  if (await checkSite()) return { ok: true, alreadyRunning: true, live: true };
   if (siteProcess && !siteProcess.killed) return { ok: true, alreadyStarting: true, live: false };
 
   siteStartError = "";
-
   let child: ChildProcess;
   try {
     if (process.platform === "win32") {
-      // npm.cmd is a Windows command shim. Starting it through cmd.exe keeps the
-      // long-running Next.js process attached to a process tree we can terminate.
-      child = spawn(
-        "cmd.exe",
-        ["/d", "/s", "/c", `npm run dev -- --hostname ${HOST} --port ${SITE_PORT}`],
-        {
-          cwd: PROJECT_DIR,
-          detached: false,
-          windowsHide: true,
-          stdio: ["ignore", "pipe", "pipe"],
-        },
-      );
+      child = spawn("cmd.exe", ["/d", "/s", "/c", `npm run dev -- --hostname ${HOST} --port ${SITE_PORT}`], {
+        cwd: PROJECT_DIR,
+        detached: false,
+        windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
     } else {
       child = spawn("npm", ["run", "dev", "--", "--hostname", HOST, "--port", String(SITE_PORT)], {
         cwd: PROJECT_DIR,
@@ -86,20 +190,14 @@ async function startSite() {
       });
     }
   } catch (error) {
-    return {
-      ok: false,
-      live: false,
-      error: error instanceof Error ? error.message : "Unable to start Next.js.",
-    };
+    return { ok: false, live: false, error: error instanceof Error ? error.message : "Unable to start Next.js." };
   }
 
   siteProcess = child;
-
   child.stdout?.on("data", (chunk) => {
     const text = String(chunk).trim();
     if (text) console.log(`[TrialIQ][Next.js] ${text}`);
   });
-
   child.stderr?.on("data", (chunk) => {
     const text = String(chunk).trim();
     if (text) {
@@ -107,16 +205,12 @@ async function startSite() {
       console.error(`[TrialIQ][Next.js] ${text}`);
     }
   });
-
   child.on("error", (error) => {
     siteStartError = error.message;
     console.error(`[TrialIQ][Next.js] Process error: ${error.message}`);
   });
-
   child.on("exit", (code, signal) => {
-    if (code !== 0 && !siteStartError) {
-      siteStartError = `Next.js process exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}.`;
-    }
+    if (code !== 0 && !siteStartError) siteStartError = `Next.js process exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}.`;
     if (siteProcess === child) siteProcess = null;
   });
 
@@ -127,7 +221,6 @@ async function startSite() {
     if (siteProcess === child) siteProcess = null;
     return { ok: false, live: false, error };
   }
-
   return { ok: true, alreadyRunning: false, live: true, pid: child.pid ?? null };
 }
 
@@ -141,10 +234,7 @@ async function waitForSite(timeoutMs: number) {
 }
 
 async function stopSite() {
-  if (!siteProcess || siteProcess.killed) {
-    return { ok: true, alreadyStopped: !(await checkSite()) };
-  }
-
+  if (!siteProcess || siteProcess.killed) return { ok: true, alreadyStopped: !(await checkSite()) };
   const pid = siteProcess.pid;
   terminateProcess(siteProcess);
   siteProcess = null;
@@ -152,7 +242,7 @@ async function stopSite() {
 }
 
 async function status() {
-  const [siteLive, git] = await Promise.all([checkSite(), gitStatus()]);
+  const [siteLive, git] = await Promise.all([checkSite(), getGitInfo()]);
   return {
     ok: true,
     agent: "online",
@@ -160,15 +250,16 @@ async function status() {
     site: { host: `${HOST}:${SITE_PORT}`, live: siteLive, managed: Boolean(siteProcess && !siteProcess.killed) },
     runner: { managed: false, status: "not-managed-yet" },
     git,
+    gitSync,
   };
 }
 
 const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
-
   try {
-    if (req.method === "GET" && req.url === "/health") return json(res, 200, { ok: true, agent: "online" });
+    if (req.method === "GET" && req.url === "/health") return json(res, 200, { ok: true, agent: "online", gitSync });
     if (req.method === "GET" && req.url === "/status") return json(res, 200, await status());
+    if (req.method === "POST" && req.url === "/git/sync") return json(res, 200, await syncGit());
     if (req.method === "POST" && req.url === "/site/start") {
       const result = await startSite();
       return json(res, result.ok ? 200 : 500, result);
@@ -185,8 +276,14 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`[TrialIQ] Local agent listening on http://${HOST}:${PORT}`);
-  console.log(`[TrialIQ] Project: ${PROJECT_DIR}`);
-  console.log(`[TrialIQ] Site target: http://${HOST}:${SITE_PORT}`);
-});
+async function boot() {
+  await syncGit();
+  server.listen(PORT, HOST, () => {
+    console.log(`[TrialIQ] Local agent listening on http://${HOST}:${PORT}`);
+    console.log(`[TrialIQ] Project: ${PROJECT_DIR}`);
+    console.log(`[TrialIQ] Site target: http://${HOST}:${SITE_PORT}`);
+    console.log(`[TrialIQ] Git sync: ${gitSync.status} — ${gitSync.message}`);
+  });
+}
+
+void boot();
