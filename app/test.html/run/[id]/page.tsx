@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, FileWarning, FlaskConical, Loader2, Sparkles, Terminal, XCircle } from "lucide-react";
 
@@ -34,16 +34,17 @@ function layerClass(layer?: Review["rootCauseLayer"]) {
 }
 
 export default function TestRunPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    params.then(({ id }) => fetch(`/api/test-suite/history/${encodeURIComponent(id)}`, { cache: "no-store" }).then(async (r) => {
+    fetch(`/api/test-suite/history/${encodeURIComponent(id)}`, { cache: "no-store" }).then(async (r) => {
       const payload = await r.json();
       if (!r.ok) throw new Error(payload.error || "Run not found");
       setReport(payload.report);
-    }).catch((e) => setError(e instanceof Error ? e.message : "Unable to load run.")));
-  }, [params]);
+    }).catch((e) => setError(e instanceof Error ? e.message : "Unable to load run."));
+  }, [id]);
 
   if (error) return <main className="min-h-screen bg-[#f7f8fa] p-10"><div className="mx-auto max-w-3xl rounded-2xl border border-red-200 bg-red-50 p-8"><h1 className="text-xl font-bold text-red-950">Run unavailable</h1><p className="mt-2 text-sm text-red-800">{error}</p><Link href="/test.html" className="mt-5 inline-flex font-semibold text-red-900 underline">Back to test suite</Link></div></main>;
   if (!report) return <main className="grid min-h-screen place-items-center bg-[#f7f8fa]"><Loader2 className="animate-spin text-blue-700"/></main>;
