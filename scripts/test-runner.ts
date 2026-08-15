@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import dotenv from "dotenv";
 import { getTestRunnerStore, getTestRunnerConfig } from "../lib/testRunStore";
 
@@ -16,6 +16,13 @@ function errorMessage(error: unknown) {
     return serialized === undefined ? String(error) : serialized;
   } catch {
     return String(error);
+  }
+}
+
+class TestRunCancelled extends Error {
+  constructor() {
+    super("Test run cancelled by user.");
+    this.name = "TestRunCancelled";
   }
 }
 
@@ -40,8 +47,30 @@ async function main() {
     return Math.max(0, Math.min(100, Math.round(percentage)));
   }
 
-  async function runPlaywright(spec: string, env: NodeJS.ProcessEnv) {
-    return new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
+  async function isCancellationRequested(jobId: string) {
+    const { data, error } = await store
+      .from("test_run_jobs")
+      .select("status")
+      .eq("id", jobId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.status === "CANCEL_REQUESTED" || data?.status === "CANCELLED";
+  }
+
+  async function markCancelled(jobId: string) {
+    await store
+      .from("test_run_jobs")
+      .update({
+        status: "CANCELLED",
+        completed_at: new Date().toISOString(),
+        error: "Test run terminated by user.",
+      })
+      .eq("id", jobId)
+      .in("status", ["RUNNING", "CANCEL_REQUESTED"]);
+  }
+
+  async function runPlaywright(spec: string, env: NodeJS.ProcessEnv, jobId: string) {
+    return new Promise<{ code: number; stdout: string; stderr: string; cancelled: boolean }>((resolve) => {
       const command = process.platform === "win32" ? (process.env.ComSpec || "cmd.exe") : "npx";
       const args = process.platform === "win32"
         ? ["/d", "/s", "/c", "npx playwright test " + spec + " --project=chromium"]
@@ -56,16 +85,48 @@ async function main() {
       let stdout = "";
       let stderr = "";
       let settled = false;
+      let cancelled = false;
+      let terminating = false;
+      let cancellationTimer: NodeJS.Timeout | undefined;
+
+      const terminateProcessTree = () => {
+        if (terminating || !child.pid) return;
+        terminating = true;
+        if (process.platform === "win32") {
+          execFile("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true }, () => undefined);
+        } else {
+          child.kill("SIGTERM");
+        }
+      };
+
       const finish = (code: number) => {
         if (settled) return;
         settled = true;
-        resolve({ code, stdout, stderr });
+        if (cancellationTimer) clearInterval(cancellationTimer);
+        resolve({ code, stdout, stderr, cancelled });
       };
+
+      const pollCancellation = async () => {
+        if (settled || cancelled) return;
+        try {
+          if (await isCancellationRequested(jobId)) {
+            cancelled = true;
+            stderr += "\n[runner] Termination requested by user. Stopping Playwright.\n";
+            terminateProcessTree();
+          }
+        } catch (error) {
+          stderr += `\n[runner cancellation poll error] ${errorMessage(error)}\n`;
+        }
+      };
+
+      cancellationTimer = setInterval(() => { void pollCancellation(); }, Math.max(1000, Math.min(pollMs, 2500)));
+      void pollCancellation();
+
       child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
       child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
       child.on("error", (error) => {
         stderr += `\n[runner spawn error] ${errorMessage(error)}`;
-        finish(1);
+        finish(cancelled ? 1 : 1);
       });
       child.on("close", (code) => finish(code ?? 1));
     });
@@ -142,13 +203,19 @@ async function main() {
       PLAYWRIGHT_EVIDENCE_DIR: evidenceDir,
       PLAYWRIGHT_OUTPUT_DIR: path.join(jobDir, "artifacts"),
     };
-    let processResult = { code: 1, stdout: "", stderr: "" };
+    let processResult = { code: 1, stdout: "", stderr: "", cancelled: false };
     let playwrightJson: any = null;
     let suiteResult: any = null;
     let aiReview: any = null;
 
     try {
-      processResult = await runPlaywright(spec, env);
+      processResult = await runPlaywright(spec, env, job.id);
+      if (processResult.cancelled) {
+        await markCancelled(job.id);
+        console.log(`[TrialIQ] Job ${job.id} terminated by user.`);
+        return;
+      }
+
       try { playwrightJson = JSON.parse(await fs.readFile(reportFile, "utf8")); } catch {}
       try { suiteResult = JSON.parse(await fs.readFile(resultFile, "utf8")); } catch {}
       const tests = flattenPlaywrightTests(playwrightJson);
@@ -159,6 +226,12 @@ async function main() {
       const failed = tests.filter((test) => test.status === "FAIL").length;
       const skipped = tests.filter((test) => test.status === "SKIP").length;
       const flaky = tests.filter((test) => test.status === "FLAKY").length;
+
+      if (await isCancellationRequested(job.id)) {
+        await markCancelled(job.id);
+        console.log(`[TrialIQ] Job ${job.id} terminated before AI review.`);
+        return;
+      }
 
       try {
         aiReview = await reviewQualitySuite({ suite: suiteName, tests: evidenceTests, aiResult: suiteResult });
@@ -171,6 +244,12 @@ async function main() {
           reviews: [],
           error: errorMessage(error),
         };
+      }
+
+      if (await isCancellationRequested(job.id)) {
+        await markCancelled(job.id);
+        console.log(`[TrialIQ] Job ${job.id} terminated before result persistence.`);
+        return;
       }
 
       const completed = new Date();
@@ -256,19 +335,26 @@ async function main() {
         }
       }
 
-      await store
+      const { error: completionError } = await store
         .from("test_run_jobs")
         .update({ status: "COMPLETED", completed_at: completed.toISOString(), run_id: run.id, error: null })
-        .eq("id", job.id);
+        .eq("id", job.id)
+        .eq("status", "RUNNING");
+      if (completionError) throw completionError;
       console.log(`[TrialIQ] ${suiteName}: ${runStatus} (${passed}/${total}) · run ${run.id}`);
     } catch (error) {
+      if (error instanceof TestRunCancelled) {
+        await markCancelled(job.id);
+        console.log(`[TrialIQ] Job ${job.id} terminated by user.`);
+        return;
+      }
       const message = errorMessage(error);
       try {
         await store.from("test_run_jobs").update({
           status: "FAILED",
           completed_at: new Date().toISOString(),
           error: message,
-        }).eq("id", job.id);
+        }).eq("id", job.id).eq("status", "RUNNING");
       } catch (updateError) {
         console.error(`[TrialIQ] Failed to persist job failure: ${errorMessage(updateError)}`);
       }
