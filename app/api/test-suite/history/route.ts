@@ -4,6 +4,28 @@ import { getTestRunStore } from "@/lib/testRunStore";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type HistoryItem = {
+  id: string;
+  runKey?: string;
+  jobId?: string;
+  runId?: string | null;
+  suite?: string;
+  suiteKey?: string;
+  startedAt: string;
+  completedAt: string;
+  requestedAt?: string;
+  durationMs: number;
+  status: string;
+  total: number;
+  passed: number;
+  failed: number;
+  skipped: number;
+  flaky: number;
+  aiReview?: { status?: string; overallScore?: number | null; model?: string };
+  error?: string | null;
+  kind: "RESULT" | "JOB";
+};
+
 export async function GET() {
   try {
     const store = getTestRunStore();
@@ -25,7 +47,7 @@ export async function GET() {
     if (runsError) throw runsError;
     if (jobsError) throw jobsError;
 
-    const reports = (runs || []).map((run) => ({
+    const reports: HistoryItem[] = (runs || []).map((run) => ({
       id: run.id,
       runKey: run.run_key,
       suite: run.suite,
@@ -50,7 +72,7 @@ export async function GET() {
       kind: "RESULT",
     }));
 
-    const queued = (jobs || []).map((job) => ({
+    const queued: HistoryItem[] = (jobs || []).map((job) => ({
       id: job.id,
       jobId: job.id,
       runId: job.run_id,
