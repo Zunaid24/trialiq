@@ -208,7 +208,8 @@ function terminatePid(pid: number | null) {
 
 function runnerStatus() {
   if (runnerProcess?.pid && !runnerProcess.killed) {
-    return { managed: true, status: "running", pid: runnerProcess.pid, error: runnerStartError || undefined };
+    const pid = runnerProcess.pid;
+    return { managed: true, status: "running", pid, error: runnerStartError || undefined };
   }
 
   const persistedPid = readRunnerPid();
