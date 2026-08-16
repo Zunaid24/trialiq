@@ -1,13 +1,19 @@
 import http from "node:http";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
+import os from "node:os";
+import path from "node:path";
+import fs from "node:fs";
 
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.TRIALIQ_AGENT_PORT || 45822);
 const SITE_PORT = Number(process.env.TRIALIQ_SITE_PORT || 3000);
 const PROJECT_DIR = process.env.TRIALIQ_PROJECT_DIR || process.cwd();
+const RUNNER_PID_FILE = path.join(os.tmpdir(), "trialiq-local-runner.pid");
 
 let siteProcess: ChildProcess | null = null;
+let runnerProcess: ChildProcess | null = null;
 let siteStartError = "";
+let runnerStartError = "";
 let gitSync: { status: string; message: string; branch: string; commit: string } = {
   status: "checking",
   message: "Checking GitHub for updates...",
@@ -154,14 +160,145 @@ function checkSite(): Promise<boolean> {
   });
 }
 
+function processAlive(pid: number | null) {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readRunnerPid() {
+  try {
+    const pid = Number(fs.readFileSync(RUNNER_PID_FILE, "utf8").trim());
+    return Number.isInteger(pid) && pid > 0 ? pid : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeRunnerPid(pid: number) {
+  fs.writeFileSync(RUNNER_PID_FILE, String(pid), "utf8");
+}
+
+function clearRunnerPid() {
+  try { fs.unlinkSync(RUNNER_PID_FILE); } catch {}
+}
+
 function terminateProcess(child: ChildProcess) {
   const pid = child.pid;
   if (!pid) return;
   if (process.platform === "win32") {
-    execFile("taskkill", ["/PID", String(pid), "/T", "/F"], () => undefined);
+    execFile("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true }, () => undefined);
   } else {
     child.kill("SIGTERM");
   }
+}
+
+function terminatePid(pid: number | null) {
+  if (!pid) return;
+  if (process.platform === "win32") {
+    execFile("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true }, () => undefined);
+  } else {
+    try { process.kill(pid, "SIGTERM"); } catch {}
+  }
+}
+
+function runnerStatus() {
+  if (runnerProcess?.pid && !runnerProcess.killed) {
+    return { managed: true, status: "running", pid: runnerProcess.pid, error: runnerStartError || undefined };
+  }
+
+  const persistedPid = readRunnerPid();
+  if (processAlive(persistedPid)) {
+    return { managed: true, status: "running", pid: persistedPid, error: runnerStartError || undefined };
+  }
+
+  clearRunnerPid();
+  return { managed: true, status: "idle", pid: null, error: runnerStartError || undefined };
+}
+
+async function startRunner() {
+  if (gitSync.status === "blocked" || gitSync.status === "error") {
+    return { ok: false, ...runnerStatus(), error: gitSync.message, git: gitSync };
+  }
+
+  const existing = runnerStatus();
+  if (existing.status === "running") return { ok: true, alreadyRunning: true, ...existing };
+
+  runnerStartError = "";
+  const npmCommand = process.platform === "win32" ? "cmd.exe" : "npm";
+  const args = process.platform === "win32"
+    ? ["/d", "/s", "/c", "npm run test:runner"]
+    : ["run", "test:runner"];
+
+  let child: ChildProcess;
+  try {
+    child = spawn(npmCommand, args, {
+      cwd: PROJECT_DIR,
+      detached: false,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: process.env,
+    });
+  } catch (error) {
+    runnerStartError = error instanceof Error ? error.message : "Unable to start the local quality runner.";
+    return { ok: false, ...runnerStatus(), error: runnerStartError };
+  }
+
+  if (!child.pid) {
+    runnerStartError = "Unable to start the local quality runner: no process id was returned.";
+    return { ok: false, ...runnerStatus(), error: runnerStartError };
+  }
+
+  runnerProcess = child;
+  writeRunnerPid(child.pid);
+
+  child.stdout?.on("data", (chunk) => {
+    const text = String(chunk).trim();
+    if (text) console.log(`[TrialIQ][Runner] ${text}`);
+  });
+  child.stderr?.on("data", (chunk) => {
+    const text = String(chunk).trim();
+    if (text) {
+      runnerStartError = text.slice(-4000);
+      console.error(`[TrialIQ][Runner] ${text}`);
+    }
+  });
+  child.on("error", (error) => {
+    runnerStartError = error.message;
+    console.error(`[TrialIQ][Runner] Process error: ${error.message}`);
+  });
+  child.on("exit", (code, signal) => {
+    if (code !== 0 && !runnerStartError) {
+      runnerStartError = `Local quality runner exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}.`;
+    }
+    if (runnerProcess === child) runnerProcess = null;
+    clearRunnerPid();
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  const current = runnerStatus();
+  if (current.status !== "running") {
+    return { ok: false, ...current, error: runnerStartError || "Local quality runner stopped during startup." };
+  }
+
+  return { ok: true, alreadyRunning: false, ...current };
+}
+
+async function stopRunner() {
+  const current = runnerStatus();
+  if (current.status !== "running") return { ok: true, alreadyStopped: true, ...current };
+
+  const pid = current.pid;
+  if (runnerProcess?.pid === pid) terminateProcess(runnerProcess);
+  else terminatePid(pid);
+
+  runnerProcess = null;
+  clearRunnerPid();
+  return { ok: true, stopped: true, pid, ...runnerStatus() };
 }
 
 async function startSite() {
@@ -248,7 +385,7 @@ async function status() {
     agent: "online",
     projectDir: PROJECT_DIR,
     site: { host: `${HOST}:${SITE_PORT}`, live: siteLive, managed: Boolean(siteProcess && !siteProcess.killed) },
-    runner: { managed: false, status: "not-managed-yet" },
+    runner: runnerStatus(),
     git,
     gitSync,
   };
@@ -257,9 +394,14 @@ async function status() {
 const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
   try {
-    if (req.method === "GET" && req.url === "/health") return json(res, 200, { ok: true, agent: "online", gitSync });
+    if (req.method === "GET" && req.url === "/health") return json(res, 200, { ok: true, agent: "online", gitSync, runner: runnerStatus() });
     if (req.method === "GET" && req.url === "/status") return json(res, 200, await status());
     if (req.method === "POST" && req.url === "/git/sync") return json(res, 200, await syncGit());
+    if (req.method === "POST" && req.url === "/runner/start") {
+      const result = await startRunner();
+      return json(res, result.ok ? 200 : 500, result);
+    }
+    if (req.method === "POST" && req.url === "/runner/stop") return json(res, 200, await stopRunner());
     if (req.method === "POST" && req.url === "/site/start") {
       const result = await startSite();
       return json(res, result.ok ? 200 : 500, result);
