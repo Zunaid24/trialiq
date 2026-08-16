@@ -13,7 +13,8 @@
     "test:ai": "node scripts/run-ai-quality.mjs",
     "test:runner": "npx --yes tsx scripts/test-runner.ts",
     "test:bridge": "npx --yes tsx scripts/local-runner-bridge.ts",
-    "local:agent": "npx --yes tsx scripts/local-agent-v2.ts"
+    "local:agent": "npx --yes tsx scripts/local-agent-proxy.ts",
+    "local:agent:core": "npx --yes tsx scripts/local-agent-v2.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
