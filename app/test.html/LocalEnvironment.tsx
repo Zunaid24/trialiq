@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, CircleAlert, Loader2, MonitorCog, RefreshCw, Square } from "lucide-react";
+import { CheckCircle2, CircleAlert, Loader2, MonitorCog, RefreshCw, Square, Zap } from "lucide-react";
 
 const AGENT_URL = "http://127.0.0.1:45822";
+const START_AGENT_URL = "trialiq://start-agent";
 
 type AgentStatus = {
   ok: boolean;
@@ -11,6 +12,7 @@ type AgentStatus = {
   projectDir?: string;
   site?: { host?: string; live?: boolean; managed?: boolean };
   git?: { branch?: string; commit?: string };
+  gitSync?: { status?: string; message?: string; branch?: string; commit?: string };
 };
 
 export default function LocalEnvironment() {
@@ -52,9 +54,18 @@ export default function LocalEnvironment() {
     }
   }
 
+  function startAgent() {
+    setMessage("Starting the TrialIQ local agent…");
+    window.location.href = START_AGENT_URL;
+    window.setTimeout(() => void refresh(), 1500);
+    window.setTimeout(() => void refresh(), 4000);
+  }
+
   const agentOnline = Boolean(status?.ok && status?.agent === "online");
   const siteLive = Boolean(status?.site?.live);
   const managed = Boolean(status?.site?.managed);
+  const gitSyncBlocked = status?.gitSync?.status === "blocked" || status?.gitSync?.status === "error";
+  const gitSyncMessage = status?.gitSync?.message || "";
 
   return (
     <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -69,6 +80,9 @@ export default function LocalEnvironment() {
               <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${agentOnline ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
                 {agentOnline ? "Agent online" : "Agent offline"}
               </span>
+              {agentOnline && <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${gitSyncBlocked ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"}`}>
+                Git {status?.gitSync?.status || "checking"}
+              </span>}
             </div>
             <p className="mt-1 text-sm text-slate-500">Control the local Next.js site used by Playwright without opening a terminal.</p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
@@ -82,10 +96,13 @@ export default function LocalEnvironment() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void action("start")} disabled={!agentOnline || siteLive || !!busy} className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40">
+          {!agentOnline && <button type="button" onClick={startAgent} className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800">
+            <Zap size={14} fill="currentColor" /> Start Agent
+          </button>}
+          <button type="button" onClick={() => void action("start")} disabled={!agentOnline || siteLive || !!busy || gitSyncBlocked} className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40">
             {busy === "start" ? <Loader2 size={14} className="animate-spin" /> : <MonitorCog size={14} />} Start local site
           </button>
-          <button type="button" onClick={() => void action("restart")} disabled={!agentOnline || !siteLive || !!busy} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
+          <button type="button" onClick={() => void action("restart")} disabled={!agentOnline || !siteLive || !!busy || gitSyncBlocked} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
             {busy === "restart" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Restart
           </button>
           <button type="button" onClick={() => void action("stop")} disabled={!agentOnline || !siteLive || !!busy} className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40">
@@ -94,7 +111,8 @@ export default function LocalEnvironment() {
         </div>
       </div>
 
-      {!agentOnline && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900"><strong>Local agent not connected.</strong> Start the TrialIQ local agent once on your machine. The deployed suite cannot start a process on your computer until the agent is online.</p>}
+      {!agentOnline && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900"><strong>Local agent not connected.</strong> Use <strong>Start Agent</strong> above after installing the one-time Windows protocol. Your browser will launch the local TrialIQ agent, then this page will detect it automatically.</p>}
+      {gitSyncBlocked && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs leading-5 text-red-900"><strong>Git sync blocked.</strong> {gitSyncMessage}</p>}
       {message && <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-semibold text-slate-700">{message}</p>}
     </section>
   );
