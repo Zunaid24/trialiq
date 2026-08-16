@@ -208,8 +208,7 @@ function terminatePid(pid: number | null) {
 
 function runnerStatus() {
   if (runnerProcess?.pid && !runnerProcess.killed) {
-    const pid = runnerProcess.pid;
-    return { managed: true, status: "running", pid, error: runnerStartError || undefined };
+    return { managed: true, status: "running", pid: runnerProcess.pid, error: runnerStartError || undefined };
   }
 
   const persistedPid = readRunnerPid();
@@ -294,12 +293,15 @@ async function stopRunner() {
   if (current.status !== "running") return { ok: true, alreadyStopped: true, ...current };
 
   const pid = current.pid;
-  if (runnerProcess?.pid === pid) terminateProcess(runnerProcess);
-  else terminatePid(pid);
+  if (pid != null) {
+    if (runnerProcess?.pid === pid) terminateProcess(runnerProcess);
+    else terminatePid(pid);
+  }
 
   runnerProcess = null;
   clearRunnerPid();
-  return { ok: true, stopped: true, pid, ...runnerStatus() };
+  const stopped = runnerStatus();
+  return { ok: true, stopped: true, pid: pid ?? null, status: stopped.status, managed: stopped.managed, error: stopped.error };
 }
 
 async function startSite() {
