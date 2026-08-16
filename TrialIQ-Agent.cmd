@@ -49,7 +49,9 @@ echo [TrialIQ] Ports 3000, 45822 and 45823 are free.
 echo [TrialIQ] Starting Local Agent...
 echo.
 
-call npm run local:agent
+rem Invoke npm through Node instead of npm.cmd/call so Ctrl+C does not trigger
+rem the nested batch-file "Terminate batch job (Y/N)?" prompt.
+node "%CD%\node_modules\npm\bin\npm-cli.js" run local:agent
 set "AGENT_EXIT=%ERRORLEVEL%"
 
 exit /b %AGENT_EXIT%
