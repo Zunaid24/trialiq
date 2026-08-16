@@ -23,11 +23,11 @@ function runPowerShell(command: string): Promise<{ ok: boolean; stdout: string; 
   });
 }
 
-async function getSiteOwner() {
+async function getPortOwner(port: number) {
   if (process.platform !== "win32") return null;
 
   const result = await runPowerShell(
-    `$c = Get-NetTCPConnection -LocalAddress '${HOST}' -LocalPort ${SITE_PORT} -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if ($c) { $p = Get-CimInstance Win32_Process -Filter \"ProcessId = $($c.OwningProcess)\" -ErrorAction SilentlyContinue; [PSCustomObject]@{Pid=$c.OwningProcess;CommandLine=$p.CommandLine} | ConvertTo-Json -Compress }`,
+    `$c = Get-NetTCPConnection -LocalAddress '${HOST}' -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if ($c) { $p = Get-CimInstance Win32_Process -Filter \"ProcessId = $($c.OwningProcess)\" -ErrorAction SilentlyContinue; [PSCustomObject]@{Pid=$c.OwningProcess;CommandLine=$p.CommandLine} | ConvertTo-Json -Compress }`,
   );
 
   if (!result.ok || !result.stdout) return null;
@@ -39,6 +39,33 @@ async function getSiteOwner() {
   } catch {
     return null;
   }
+}
+
+async function stopPortOwner(port: number, label: string) {
+  const owner = await getPortOwner(port);
+  if (!owner) return true;
+
+  console.log(`[TrialIQ] Existing ${label} detected on port ${port} (PID ${owner.pid}). Stopping it...`);
+
+  await new Promise<void>((resolve) => {
+    execFile("taskkill", ["/PID", String(owner.pid), "/T", "/F"], { windowsHide: true }, () => resolve());
+  });
+
+  const deadline = Date.now() + 10000;
+  while (Date.now() < deadline) {
+    if (!(await getPortOwner(port))) {
+      console.log(`[TrialIQ] Port ${port} is free.`);
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+
+  console.error(`[TrialIQ] Port ${port} did not become free.`);
+  return false;
+}
+
+async function getSiteOwner() {
+  return getPortOwner(SITE_PORT);
 }
 
 function isTrialIQSite(commandLine: string) {
@@ -86,7 +113,6 @@ async function refreshLocalSite() {
     console.log(`[TrialIQ] Port ${SITE_PORT} is free.`);
   }
 
-  // Tell the underlying agent to clear its managed ChildProcess reference.
   await requestInternal("/site/stop", "POST");
 
   return { ok: true, status: 200 };
@@ -172,7 +198,15 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
   proxyRequest(req, res);
 }
 
-function startInternalAgent() {
+async function startInternalAgent() {
+  // 45823 is a dedicated TrialIQ port. Clean up a previous core agent before spawning a new one.
+  const free = await stopPortOwner(INTERNAL_PORT, "stale internal agent");
+  if (!free) {
+    console.error(`[TrialIQ] Cannot start internal agent because port ${INTERNAL_PORT} is still occupied.`);
+    process.exitCode = 1;
+    return;
+  }
+
   const child = spawn(
     process.platform === "win32" ? "cmd.exe" : "npm",
     process.platform === "win32"
@@ -198,7 +232,7 @@ const server = http.createServer((req, res) => {
   void handle(req, res);
 });
 
-startInternalAgent();
+void startInternalAgent();
 server.listen(PROXY_PORT, HOST, () => {
   console.log(`[TrialIQ] Local agent proxy listening on http://${HOST}:${PROXY_PORT}`);
   console.log(`[TrialIQ] Internal agent: http://${HOST}:${INTERNAL_PORT}`);
