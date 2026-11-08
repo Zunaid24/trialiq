@@ -187,3 +187,11 @@ body {
     @apply font-sans;
   }
 }
+/* Horizontal scroll areas (tabs, wide tables) still scroll by touch and trackpad, without a visible bar. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Landing hero: a soft band that sweeps the result card, as if TrialIQ is reading it. */
+@keyframes hero-scan { 0% { top: -4rem; } 100% { top: 100%; } }
+.hero-scan { animation: hero-scan 3.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .hero-scan { animation: none; display: none; } }

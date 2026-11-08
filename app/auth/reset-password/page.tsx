@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button, Card, Field, Input, Notice } from "@/components/ds";
+import { Logo } from "@/components/brand/Logo";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function ResetPasswordPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-page px-5 py-10">
       <div className="w-full max-w-[420px] space-y-5">
-        <Link href="/" className="flex items-center justify-center gap-2.5"><span className="h-6 w-6 rounded-md bg-primary" /><span className="text-lg font-bold text-ink">TrialIQ</span></Link>
+        <Link href="/" className="flex items-center justify-center" aria-label="TrialIQ home"><Logo size={28} /></Link>
         <Card className="p-6">
           <h1 className="text-xl font-semibold text-ink">Choose a new password</h1>
           <form onSubmit={submit} className="mt-5 space-y-4">

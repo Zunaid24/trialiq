@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AUTH_DISABLED } from "@/lib/authMode";
 import { MODULES } from "@/lib/modules";
 import { hrefFor } from "@/components/modules/ChecksList";
+import { Logo } from "@/components/brand/Logo";
 
 type MenuItem = { title: string; href: string; icon: typeof LayoutGrid; match?: string[] };
 type SearchResult = { title: string; type: string; href: string; detail?: string };
@@ -58,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen overflow-hidden bg-page text-ink">
       {menuOpen && <button aria-label="Close menu" className="fixed inset-0 z-30 bg-ink/30 lg:hidden" onClick={() => setMenuOpen(false)} />}
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-60 shrink-0 flex-col border-r border-line bg-white px-4 py-5 transition-transform lg:static lg:translate-x-0 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <Link href="/dashboard" className="mb-5 flex items-center gap-2.5 px-2" aria-label="TrialIQ home"><span className="h-[22px] w-[22px] rounded-md bg-primary" /><span className="text-[17px] font-bold tracking-[-0.01em]">TrialIQ</span></Link>
+        <Link href="/dashboard" className="mb-5 flex items-center px-2" aria-label="TrialIQ home"><Logo size={24} /></Link>
         <div className="mb-5 rounded-[10px] border border-line bg-page px-3 py-2.5"><p className="font-mono text-xs font-medium text-ink">TRIALIQ-101</p><p className="text-xs text-ink-2">Advanced NSCLC, Phase II</p></div>
         <nav aria-label="Main" className="space-y-1">{menu.map((item) => { const Icon = item.icon; const active = isActive(item); return <Link key={item.title} href={item.href} onClick={() => setMenuOpen(false)} aria-current={active ? "page" : undefined} className={`${navLink} ${active ? "bg-tint font-semibold text-brand-800" : "font-medium text-ink-2 hover:bg-page hover:text-ink"}`}><Icon size={17} strokeWidth={1.8} className={active ? "text-primary" : "text-ink-3"} /><span className="flex-1">{item.title}</span>{item.title === "Review" && openCount > 0 && <span className="rounded-full bg-no-bg px-1.5 text-xs font-semibold text-no">{openCount}</span>}</Link>; })}</nav>
         <div className="mt-auto space-y-1">

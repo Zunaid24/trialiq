@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/authMode";
 import { Button, Card, Field, Input, Notice } from "@/components/ds";
+import { Logo } from "@/components/brand/Logo";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://trialai.vercel.app";
 
@@ -66,7 +67,7 @@ function AuthForm() {
 
   return (
     <div className="w-full max-w-[420px] space-y-5">
-      <Link href="/" className="flex items-center justify-center gap-2.5" aria-label="TrialIQ home"><span className="h-6 w-6 rounded-md bg-primary" /><span className="text-lg font-bold tracking-[-0.01em] text-ink">TrialIQ</span></Link>
+      <Link href="/" className="flex items-center justify-center" aria-label="TrialIQ home"><Logo size={28} /></Link>
 
       <Card className="space-y-4 border-soft bg-tint p-5">
         <div>

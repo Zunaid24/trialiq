@@ -16,7 +16,7 @@ const uiMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "TrialIQ",
-  description: "AI-powered Clinical Trial Screening Intelligence",
+  description: "AI reads the protocol and the participant record. Your team makes the call.",
 };
 
 export default function RootLayout({

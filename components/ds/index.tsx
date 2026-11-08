@@ -107,12 +107,12 @@ export function toneFor(value: unknown): Tone {
 /* ---------- Tabs ---------- */
 export function Tabs<T extends string>({ items, value, onChange, label }: { items: { id: T; label: string; count?: number | string }[]; value: T; onChange: (id: T) => void; label: string }) {
   return (
-    <div role="tablist" aria-label={label} className="flex gap-7 overflow-x-auto border-b border-line">
+    <div role="tablist" aria-label={label} className="no-scrollbar flex gap-7 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--line)]">
       {items.map((t) => {
         const on = t.id === value;
         return (
           <button key={t.id} role="tab" aria-selected={on} onClick={() => onChange(t.id)}
-            className={cx("-mb-px flex shrink-0 items-center gap-1.5 border-b-2 pb-3 pt-1 text-sm transition-colors", on ? "border-primary font-semibold text-brand-800" : "border-transparent font-medium text-ink-2 hover:text-ink")}>
+            className={cx("flex shrink-0 items-center gap-1.5 border-b-2 pb-3 pt-1 text-sm transition-colors", on ? "border-primary font-semibold text-brand-800" : "border-transparent font-medium text-ink-2 hover:text-ink")}>
             {t.label}
             {t.count !== undefined && t.count !== "" && <span className={cx("text-xs font-medium", on ? "text-primary" : "text-ink-3")}>{t.count}</span>}
           </button>
@@ -198,7 +198,7 @@ export function KeyValues({ items }: { items: { k: string; v: ReactNode }[] }) {
 
 export function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-line">
+    <div className="no-scrollbar overflow-x-auto rounded-lg border border-line">
       <table className="w-full min-w-[560px] border-collapse text-left text-[13px]">
         <thead className="bg-page">
           <tr>{head.map((h) => <th key={h} scope="col" className="px-3 py-2 text-xs font-semibold text-ink-2">{h}</th>)}</tr>
