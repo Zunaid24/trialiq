@@ -19,7 +19,7 @@ type DocumentRow = { name: string; document_type: string | null };
 type FindingRow = { title: string; summary: string | null; analysis_type: string | null };
 
 const menu: MenuItem[] = [
-  { title: "Today", href: "/dashboard", icon: LayoutGrid, match: ["/dashboard/memory"] },
+  { title: "Worklist", href: "/dashboard", icon: LayoutGrid, match: ["/dashboard/memory"] },
   { title: "Participants", href: "/dashboard/participants", icon: Users, match: ["/dashboard/clinical-intelligence", "/dashboard/workspace/eligibility", "/dashboard/workspace/patient-matching", "/dashboard/workspace/source-review", "/dashboard/workspace/lab-intelligence", "/dashboard/workspace/medications", "/dashboard/workspace/deviations", "/dashboard/workspace/adverse-events"] },
   { title: "Review", href: "/dashboard/review-queue", icon: ListChecks },
   { title: "Study", href: "/dashboard/study", icon: FileText, match: ["/dashboard/workspace/protocol", "/dashboard/workspace/visit-assistant", "/dashboard/workspace/safety"] },

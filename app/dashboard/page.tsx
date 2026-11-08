@@ -16,11 +16,11 @@ export default function TodayPage() {
   useEffect(() => {
     fetch("/api/dashboard", { cache: "no-store" })
       .then(async (r) => { const x = await r.json(); if (!r.ok || !x.success) throw new Error(x.message); setData(x.data); })
-      .catch((e) => setError(e.message || "Today could not load."));
+      .catch((e) => setError(e.message || "The worklist could not load."));
   }, []);
 
   if (error) return <Page><Notice>{error}</Notice></Page>;
-  if (!data) return <Page><Loading label="Loading today" /></Page>;
+  if (!data) return <Page><Loading label="Loading your worklist" /></Page>;
 
   const o = data.overview;
   const decisions = data.actions.slice(0, 6);
