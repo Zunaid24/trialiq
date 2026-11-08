@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { extractPdfText } from "@/lib/extractPdfText";
 import { modulesForTab } from "@/lib/modules";
 import ModuleRunner from "@/components/modules/ModuleRunner";
-import { AiBox, AiStatus, Button, Card, Disclosure, Loading, Notice, Page, PageHeader, Row, Segmented, Spinner, StatusPill, Tabs, Textarea, ago, cx, type Tone } from "@/components/ds";
+import CriterionDetail from "@/components/modules/CriterionDetail";
+import { AiBox, AiStatus, Button, Card, Disclosure, Loading, Notice, Page, PageHeader, Row, Segmented, Spinner, StatusPill, Tabs, Textarea, ago, type Tone } from "@/components/ds";
 
 type Criterion = { criterion?: string; expected?: string; actual?: string; evidence?: string; sourceReference?: string; status?: string; assessment?: string };
 type Report = {
@@ -180,10 +181,7 @@ export default function ParticipantPage({ params }: { params: Promise<{ code: st
                     <p className="flex items-center gap-2 text-xs text-ink-3"><span className="font-mono">{current.id}</span><span>{current.kind} criterion</span></p>
                     <h2 className="mt-1.5 text-xl font-semibold leading-snug tracking-[-0.01em] text-ink">{current.name}</h2>
                   </div>
-                  <dl className="space-y-3 text-sm">
-                    <div><dt className="text-xs font-semibold text-ink-3">Protocol requires</dt><dd className="mt-0.5 text-ink">{current.expected || "Not stated in the protocol"}</dd></div>
-                    <div><dt className="text-xs font-semibold text-ink-3">Record shows</dt><dd className={cx("mt-0.5 font-semibold", current.group === "no" ? "text-no" : current.group === "rev" ? "text-rev" : "text-ok")}>{current.actual || "Not documented"}</dd></div>
-                  </dl>
+                  <CriterionDetail name={current.name} expected={current.expected} actual={current.actual} group={current.group} assessment={current.assessment} />
 
                   {decisions[current.id] ? (
                     <div className="flex items-center justify-between gap-3 rounded-lg bg-ok-bg px-4 py-3 text-[13px]">

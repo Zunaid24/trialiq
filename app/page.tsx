@@ -71,10 +71,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
   if (params.code) redirect(`/auth/callback?code=${encodeURIComponent(params.code)}&next=/dashboard`);
 
   const groups = [
-    { title: "For each participant", list: modulesForArea("participant") },
-    { title: "Across the study", list: modulesForArea("study") },
-    { title: "For data quality", list: modulesForArea("data") },
+    { title: "For each participant", short: "Participant", list: modulesForArea("participant") },
+    { title: "Across the study", short: "Study", list: modulesForArea("study") },
+    { title: "For data quality", short: "Data quality", list: modulesForArea("data") },
   ];
+
+  const all = groups.flatMap((g) => g.list.map((m) => ({ ...m, group: g.short })));
 
   return (
     <div className="min-h-screen bg-white text-ink">
@@ -171,21 +173,29 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         <section id="checks" className="bg-white">
           <div className="mx-auto max-w-[1200px] px-5 py-24 md:px-8">
             <div className="max-w-3xl">
-              <p className="text-sm font-semibold text-primary">Twelve checks</p>
+              <p className="text-sm font-semibold text-primary">{all.length} checks</p>
               <h2 className="mt-3 text-[36px] font-semibold leading-[1.1] tracking-[-0.025em] md:text-[44px]">One way of working, from screening to data quality.</h2>
             </div>
-            <div className="mt-12 grid gap-6 lg:grid-cols-3">
-              {groups.map((g) => (
-                <div key={g.title} className="rounded-2xl border border-line bg-page p-6">
-                  <h3 className="text-sm font-semibold text-ink">{g.title}</h3>
-                  <ul className="mt-4 space-y-3">
-                    {g.list.map((m) => (
-                      <li key={m.id} className="flex items-start gap-3">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                        <span><span className="block text-[15px] font-semibold text-ink">{m.title}</span><span className="block text-[13px] text-ink-3">Sign off: {m.signOff}</span></span>
-                      </li>
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {all.map((m, i) => i === 0 ? (
+                <div key={m.id} className="relative flex flex-col overflow-hidden rounded-2xl bg-[#0B1A3A] p-7 text-white sm:col-span-2 lg:row-span-2">
+                  <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/50 blur-3xl" aria-hidden />
+                  <span className="relative self-start rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80">Start here</span>
+                  <h3 className="relative mt-5 text-2xl font-semibold tracking-[-0.02em]">{m.title}</h3>
+                  <p className="relative mt-2 max-w-sm text-[15px] leading-6 text-white/70">{m.job} Every criterion comes back with its source, sorted by what needs you first.</p>
+                  <div className="relative mt-auto space-y-2 pt-8" aria-hidden>
+                    {([["I4", "Blood counts", "Not met", "bg-[#FF9C8A]"], ["E3", "Prohibited medicines", "Needs evidence", "bg-[#F5C26B]"], ["I1", "Age 18 or older", "Met", "bg-[#7FD8B0]"]] as const).map(([id, t, s, c]) => (
+                      <div key={id} className="flex items-center gap-3 rounded-lg bg-white/[0.06] px-3 py-2.5 text-[13px]"><span className="w-6 font-mono text-xs text-white/50">{id}</span><span className="flex-1">{t}</span><span className="flex items-center gap-1.5 text-xs text-white/70"><span className={`h-1.5 w-1.5 rounded-full ${c}`} />{s}</span></div>
                     ))}
-                  </ul>
+                  </div>
+                  <p className="relative mt-5 border-t border-white/10 pt-3 text-xs text-white/60">Sign off: <span className="font-medium text-white/85">{m.signOff}</span></p>
+                </div>
+              ) : (
+                <div key={m.id} className="group flex flex-col rounded-2xl border border-line bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_16px_32px_-20px_rgba(47,102,208,0.45)]">
+                  <span className="self-start rounded-full bg-page px-2.5 py-1 text-[11px] font-semibold text-ink-2">{m.group}</span>
+                  <h3 className="mt-4 text-base font-semibold tracking-[-0.01em] text-ink">{m.title}</h3>
+                  <p className="mt-1.5 flex-1 text-[13px] leading-5 text-ink-2">{m.job}</p>
+                  <p className="mt-4 border-t border-line pt-3 text-xs text-ink-3">Sign off: <span className="font-medium text-ink-2">{m.signOff}</span></p>
                 </div>
               ))}
             </div>
