@@ -16,10 +16,10 @@ export default function SiteNav() {
       <div className="mx-auto flex h-16 max-w-[1160px] items-center gap-6 px-5 md:px-8">
         <Link href="/" className="flex items-center gap-2.5" aria-label="TrialIQ home"><span className="h-[22px] w-[22px] rounded-md bg-primary" /><span className="text-[17px] font-bold tracking-[-0.01em] text-ink">TrialIQ</span></Link>
         <nav aria-label="Site" className="hidden flex-1 items-center gap-6 text-sm font-medium text-ink-2 md:flex">
-          <Link href="/#problem" className="hover:text-ink">Problem</Link>
-          <Link href="/#how" className="hover:text-ink">How it works</Link>
+          <Link href="/#compare" className="hover:text-ink">Before and after</Link>
+          <Link href="/#how" className="hover:text-ink">How the AI works</Link>
           <Link href="/#checks" className="hover:text-ink">Checks</Link>
-          <Link href="/#trust" className="hover:text-ink">Trust</Link>
+          <Link href="/#why" className="hover:text-ink">Why TrialIQ</Link>
         </nav>
         <div className="ml-auto flex items-center gap-2">
           {signedIn ? <ButtonLink kind="primary" size="sm" href="/dashboard">Open workspace</ButtonLink> : <>

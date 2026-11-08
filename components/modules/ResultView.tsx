@@ -3,7 +3,7 @@
 // Renders any TrialIQ module result with the same design system pieces, so every check reads the same way:
 // what TrialIQ concluded, what needs a person, and the evidence behind each line.
 import { useState, type ReactNode } from "react";
-import { AiBox, AiStatus, Card, KeyValues, SectionTitle, StatusPill, toneFor, cx } from "@/components/ds";
+import { AiBox, AiStatus, Card, Disclosure, KeyValues, SectionTitle, StatusPill, toneFor, cx } from "@/components/ds";
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 type Obj = { [k: string]: Json };
@@ -41,6 +41,7 @@ export function headlineOf(r: Obj): string | null {
 }
 
 function Item({ o }: { o: Obj }) {
+  const [more, setMore] = useState(false);
   const titleKey = TITLE_FIELDS.find((k) => typeof o[k] === "string" && o[k]);
   const statusKey = STATUS_FIELDS.find((k) => typeof o[k] === "string" && o[k] && (o[k] as string).length < 40);
   const quote = QUOTE_FIELDS.map((k) => o[k]).find((v) => typeof v === "string" && v) as string | undefined;
@@ -55,7 +56,10 @@ function Item({ o }: { o: Obj }) {
         {statusKey && <StatusPill tone={toneFor(o[statusKey])}>{String(o[statusKey])}</StatusPill>}
         {o.reviewRequired === true && !statusKey && <StatusPill tone="rev">Needs review</StatusPill>}
       </div>
-      {shown.length > 0 && (
+      {(shown.length > 0 || quote || src !== undefined) && (
+        <button type="button" onClick={() => setMore((m) => !m)} aria-expanded={more} className="mt-1 text-[13px] font-semibold text-primary hover:underline">{more ? "Hide details" : "Details"}</button>
+      )}
+      {more && shown.length > 0 && (
         <dl className="mt-1.5 grid gap-x-6 gap-y-1 text-[13px] sm:grid-cols-2">
           {shown.map(([k, v]) => (
             <div key={k} className={cx("min-w-0", text(v).length > 60 && "sm:col-span-2")}>
@@ -65,13 +69,18 @@ function Item({ o }: { o: Obj }) {
           ))}
         </dl>
       )}
-      {quote && <p className="mt-2 border-l-2 border-soft pl-3 text-[13px] leading-5 text-ink-2">“{quote}”</p>}
-      {src !== undefined && <p className="mt-1 text-xs text-ink-3">Source: {text(src as Json)}</p>}
+      {more && quote && <p className="mt-2 border-l-2 border-soft pl-3 text-[13px] leading-5 text-ink-2">“{quote}”</p>}
+      {more && src !== undefined && <p className="mt-1 text-xs text-ink-3">Source: {text(src as Json)}</p>}
     </li>
   );
 }
 
+// Items that need a person come first; the rest wait behind "Show more".
+const rank = (o: Obj) => ({ no: 0, rev: 1, neutral: 2, info: 2, ok: 3 })[toneFor(STATUS_FIELDS.map((f) => o[f]).find((x) => typeof x === "string"))];
+const sorted = (objs: Obj[]) => [...objs].sort((a, b) => rank(a) - rank(b));
+
 function Block({ k, v, depth = 0 }: { k: string; v: Json; depth?: number }): ReactNode {
+  const [all, setAll] = useState(false);
   if (isEmpty(v)) return null;
   if (Array.isArray(v)) {
     const objs = v.filter(isObj) as Obj[];
@@ -80,7 +89,10 @@ function Block({ k, v, depth = 0 }: { k: string; v: Json; depth?: number }): Rea
       return (
         <section>
           <SectionTitle title={humanize(k)} count={objs.length} action={flagged && flagged !== objs.length ? <span className="text-xs text-ink-3">{flagged} need attention</span> : undefined} />
-          <Card as="div" className="overflow-hidden"><ul className="divide-y divide-line">{objs.map((o, i) => <Item key={i} o={o} />)}</ul></Card>
+          <Card as="div" className="overflow-hidden">
+            <ul className="divide-y divide-line">{sorted(objs).slice(0, all ? undefined : 5).map((o, i) => <Item key={i} o={o} />)}</ul>
+            {objs.length > 5 && <button type="button" onClick={() => setAll((a) => !a)} className="w-full border-t border-line px-4 py-3 text-left text-[13px] font-semibold text-primary hover:bg-page">{all ? "Show fewer" : `Show ${objs.length - 5} more`}</button>}
+          </Card>
         </section>
       );
     }
@@ -115,6 +127,9 @@ export default function ResultView({ result, savedAt }: { result: Obj; savedAt?:
   const sources = Array.isArray((result.audit as Obj | undefined)?.sourceReferences) ? ((result.audit as Obj).sourceReferences as Json[]).length : null;
   const scalars = Object.entries(result).filter(([k, v]) => !HIDDEN.has(k) && !META_KEYS.has(k) && !isObj(v) && !Array.isArray(v) && !isEmpty(v));
   const blocks = Object.entries(result).filter(([k, v]) => !HIDDEN.has(k) && !META_KEYS.has(k) && (isObj(v) || Array.isArray(v)) && !isEmpty(v));
+  // The first list of items is what the person acts on. Everything else stays one click away.
+  const primary = blocks.find(([, v]) => Array.isArray(v) && v.some(isObj));
+  const rest = blocks.filter((b) => b !== primary);
   const limitations = Array.isArray(result.limitations) ? (result.limitations as Json[]).map(text).filter(Boolean) : [];
 
   return (
@@ -138,9 +153,16 @@ export default function ResultView({ result, savedAt }: { result: Obj; savedAt?:
             <p className="text-xs text-ink-3">TrialIQ drafts. A qualified person confirms every finding before it is used.</p>
           </div>
         )}
-        {scalars.length > 0 && <div className="border-t border-line pt-4"><KeyValues items={scalars.map(([k, v]) => ({ k: humanize(k), v: text(v) }))} /></div>}
       </Card>
-      {blocks.map(([k, v]) => <Block key={k} k={k} v={v} />)}
+      {primary && <Block k={primary[0]} v={primary[1]} />}
+      {(rest.length > 0 || scalars.length > 0) && (
+        <Disclosure label={`Show the full result (${rest.length + (scalars.length ? 1 : 0)} more sections)`} openLabel="Hide the full result">
+          <div className="space-y-6">
+            {scalars.length > 0 && <Card as="div" className="p-4"><KeyValues items={scalars.map(([k, v]) => ({ k: humanize(k), v: text(v) }))} /></Card>}
+            {rest.map(([k, v]) => <Block key={k} k={k} v={v} />)}
+          </div>
+        </Disclosure>
+      )}
     </div>
   );
 }

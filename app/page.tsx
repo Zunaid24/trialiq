@@ -4,18 +4,28 @@ import SiteFooter from "@/components/site/SiteFooter";
 import { AiBox, AiStatus, ButtonLink, Card, StatusPill } from "@/components/ds";
 import { modulesForArea } from "@/lib/modules";
 
-const problems = [
-  { title: "Screening means reading two documents at once", body: "A coordinator holds the protocol in one window and the chart in another, and checks every criterion by hand. Screen failures often show up late, after visits and lab work are done." },
-  { title: "Protocols are long and they change", body: "Criteria, visit windows and prohibited medicines sit across many pages and amendments. Finding the rule that applies today takes time." },
-  { title: "The same facts get typed again and again", body: "Values move from lab reports and notes into forms by hand. Each copy is another place for a mismatch and another query later." },
-  { title: "AI is only useful if people can trust it", body: "Regulators expect a qualified person to stay in charge. A tool that hides its reasoning creates more checking, not less." },
+// Before and after: the manual way each check is done today, next to what TrialIQ does instead.
+const compare = [
+  { task: "Eligibility screening", before: "The protocol sits in one window and the chart in another. Every criterion is checked by eye.", after: "Every criterion comes back with a verdict and the exact line from the record behind it." },
+  { task: "Lab values", before: "Each value and its range is copied out of the report and compared by hand.", after: "Values outside the reference range are flagged with the report line they came from." },
+  { task: "Medications", before: "Each medicine is checked against the prohibited list and the washout rules.", after: "Prohibited medicines and open washout periods are flagged for the investigator." },
+  { task: "Deviations and adverse events", before: "Log entries are written from visit notes, often days later.", after: "A draft entry is ready with the fields that are still missing called out." },
+  { task: "Cross record checks", before: "Dates are compared across every document before the monitor visit.", after: "Records that disagree are listed while there is still time to fix them." },
+  { task: "Audit trail", before: "Decisions live in emails and in the margins of printouts.", after: "Each decision is saved with the name of the person who made it and their reason." },
 ];
 
-const steps = [
-  { n: "1", title: "Add the documents you already have", body: "Protocol, screening summary, lab report, medication list. TrialIQ works from the files, not from forms you have to fill in." },
-  { n: "2", title: "TrialIQ drafts the check", body: "Every criterion or value comes back with what the protocol asks for, what the record shows and where it was found." },
-  { n: "3", title: "You decide, with a reason", body: "One decision at a time. Confirm, request evidence or send to the PI. Nothing is final until a person signs it off." },
-  { n: "4", title: "The audit trail writes itself", body: "Each decision is saved with who made it, when and why, so a monitor can follow it later." },
+const how = [
+  { n: "01", title: "Reads the files you already have", body: "Upload the protocol and the participant PDFs. No forms to fill and no system to integrate." },
+  { n: "02", title: "Matches every rule to the record", body: "TrialIQ pulls each criterion out of the protocol and looks for the matching fact in the chart." },
+  { n: "03", title: "Shows its evidence", body: "Every answer carries the protocol rule, the record value and the page it was found on." },
+  { n: "04", title: "Stops at the decision", body: "The AI drafts. A coordinator or PI confirms, with a reason, before anything counts." },
+];
+
+const why = [
+  { title: "Proof beside every answer", body: "No black box. Open any result and the source line is right there, so checking the AI is quick." },
+  { title: "Built around human sign off", body: "ICH E6(R3) keeps qualified people responsible for trial decisions. TrialIQ never decides on its own." },
+  { title: "One decision at a time", body: "Open items come first and everything else waits a click away. Coordinators see what to do next, not a wall of data." },
+  { title: "Twelve checks, one way of working", body: "Every check reads the same way and ends with the same sign off, so there is one thing to learn." },
 ];
 
 function Preview() {
@@ -60,27 +70,33 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
       <main>
         <section className="mx-auto grid max-w-[1160px] items-center gap-12 px-5 pb-20 pt-14 md:px-8 lg:grid-cols-[1fr_520px] lg:pt-20">
           <div>
-            <p className="text-sm font-semibold text-primary">For clinical research sites and sponsor teams</p>
-            <h1 className="mt-3 text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink md:text-[52px]">Know why a participant can or cannot enroll, with the evidence next to every criterion.</h1>
-            <p className="mt-5 max-w-xl text-[17px] leading-7 text-ink-2">TrialIQ reads the protocol and the participant record, drafts each check with its source and leaves every decision to your team. Coordinators spend their time deciding instead of searching.</p>
+            <p className="inline-flex items-center gap-2 rounded-full border border-soft bg-tint px-3 py-1 text-[13px] font-semibold text-brand-800"><span className="h-1.5 w-1.5 rounded-full bg-primary" />AI screening assistant for clinical trial sites</p>
+            <h1 className="mt-5 text-[42px] font-semibold leading-[1.06] tracking-[-0.025em] text-ink md:text-[58px]">AI reads the protocol.<br /><span className="text-primary">You make the call.</span></h1>
+            <p className="mt-5 max-w-xl text-[17px] leading-7 text-ink-2">TrialIQ reads the protocol and the participant record together, checks every eligibility criterion and puts the source line beside each answer. Coordinators stop hunting through PDFs and start deciding.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink kind="primary" size="lg" href="/auth?demo=1">Try the demo</ButtonLink>
-              <ButtonLink size="lg" href="#how">See how it works</ButtonLink>
+              <ButtonLink kind="primary" size="lg" href="/auth?demo=1">Screen a demo participant</ButtonLink>
+              <ButtonLink size="lg" href="#compare">See before and after</ButtonLink>
             </div>
-            <p className="mt-4 text-[13px] text-ink-3">The demo opens with a shared account and synthetic records. No real patient data.</p>
+            <p className="mt-4 text-[13px] text-ink-3">Opens with a shared demo account and synthetic records. No real patient data.</p>
           </div>
           <Preview />
         </section>
 
-        <section id="problem" className="border-y border-line bg-white">
+        <section id="compare" className="border-y border-line bg-white">
           <div className="mx-auto max-w-[1160px] px-5 py-20 md:px-8">
-            <h2 className="max-w-2xl text-[30px] font-semibold leading-tight tracking-[-0.015em]">Most of a coordinator&apos;s day goes into finding information, not deciding on it.</h2>
-            <p className="mt-3 max-w-2xl text-[15px] leading-7 text-ink-2">Published research on trial operations points to the same friction again and again. TrialIQ was designed around these problems.</p>
-            <div className="mt-10 grid gap-5 md:grid-cols-2">
-              {problems.map((p) => (
-                <div key={p.title} className="rounded-xl border border-line bg-page p-6">
-                  <h3 className="text-base font-semibold text-ink">{p.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-ink-2">{p.body}</p>
+            <h2 className="max-w-3xl text-[32px] font-semibold leading-tight tracking-[-0.02em]">A coordinator&apos;s day goes into finding information. TrialIQ gives that time back to deciding.</h2>
+            <p className="mt-3 max-w-2xl text-[15px] leading-7 text-ink-2">Here is what each task looks like by hand today, and what it looks like when the AI does the reading first.</p>
+            <div className="mt-10 overflow-hidden rounded-xl border border-line">
+              <div className="hidden grid-cols-[220px_1fr_1fr] bg-page text-[13px] font-semibold md:grid">
+                <p className="px-5 py-3 text-ink-2">Task</p>
+                <p className="border-l border-line px-5 py-3 text-ink-2">By hand today</p>
+                <p className="border-l border-line px-5 py-3 text-primary">With TrialIQ</p>
+              </div>
+              {compare.map((c) => (
+                <div key={c.task} className="grid border-t border-line first:border-t-0 md:grid-cols-[220px_1fr_1fr] md:first:border-t">
+                  <p className="px-5 pt-4 text-sm font-semibold text-ink md:py-4">{c.task}</p>
+                  <p className="px-5 pt-2 text-sm leading-6 text-ink-2 md:border-l md:border-line md:py-4"><span className="font-semibold text-ink-3 md:hidden">By hand: </span>{c.before}</p>
+                  <p className="px-5 pb-4 pt-2 text-sm leading-6 text-ink md:border-l md:border-line md:bg-tint/50 md:py-4"><span className="font-semibold text-primary md:hidden">With TrialIQ: </span>{c.after}</p>
                 </div>
               ))}
             </div>
@@ -88,67 +104,61 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         </section>
 
         <section id="how" className="mx-auto max-w-[1160px] px-5 py-20 md:px-8">
-          <h2 className="max-w-2xl text-[30px] font-semibold leading-tight tracking-[-0.015em]">AI does the reading. People make the call.</h2>
-          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-ink-2">TrialIQ takes over the manual parts of a check and stops at the decision. Every screen has one clear next step.</p>
+          <h2 className="max-w-2xl text-[32px] font-semibold leading-tight tracking-[-0.02em]">How the AI works</h2>
+          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-ink-2">A Gemini model reads the documents and drafts each check. It never signs anything off.</p>
           <ol className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {steps.map((s) => (
+            {how.map((s) => (
               <li key={s.n} className="rounded-xl border border-line bg-white p-6">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-tint text-sm font-semibold text-brand-800">{s.n}</span>
-                <h3 className="mt-4 text-base font-semibold text-ink">{s.title}</h3>
+                <span className="font-mono text-sm font-medium text-primary">{s.n}</span>
+                <h3 className="mt-3 text-base font-semibold text-ink">{s.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-ink-2">{s.body}</p>
               </li>
             ))}
           </ol>
         </section>
 
-        <section id="checks" className="border-y border-line bg-white">
+        <section id="why" className="bg-brand-800 text-white">
           <div className="mx-auto max-w-[1160px] px-5 py-20 md:px-8">
-            <h2 className="max-w-2xl text-[30px] font-semibold leading-tight tracking-[-0.015em]">Twelve checks that replace manual work</h2>
-            <p className="mt-3 max-w-2xl text-[15px] leading-7 text-ink-2">Each check reads the source documents, shows what it found and names who signs it off.</p>
-            <div className="mt-10 grid gap-8 lg:grid-cols-3">
-              {groups.map((g) => (
-                <div key={g.title}>
-                  <h3 className="text-sm font-semibold text-ink-2">{g.title}</h3>
-                  <ul className="mt-3 divide-y divide-line rounded-xl border border-line">
-                    {g.list.map((m) => (
-                      <li key={m.id} className="px-4 py-3.5">
-                        <p className="text-sm font-semibold text-ink">{m.title}</p>
-                        <p className="mt-0.5 text-[13px] leading-5 text-ink-2">Instead of {m.replaces.charAt(0).toLowerCase() + m.replaces.slice(1)}</p>
-                      </li>
-                    ))}
-                  </ul>
+            <h2 className="max-w-2xl text-[32px] font-semibold leading-tight tracking-[-0.02em]">Why teams can trust it</h2>
+            <p className="mt-3 max-w-2xl text-[15px] leading-7 text-white/75">Most AI tools give an answer. TrialIQ gives the answer and the proof, then hands the decision to a person.</p>
+            <div className="mt-10 grid gap-5 md:grid-cols-2">
+              {why.map((w) => (
+                <div key={w.title} className="rounded-xl border border-white/15 bg-white/5 p-6">
+                  <h3 className="text-base font-semibold">{w.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-white/75">{w.body}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="trust" className="mx-auto max-w-[1160px] px-5 py-20 md:px-8">
-          <div className="grid gap-10 lg:grid-cols-2">
-            <div>
-              <h2 className="text-[30px] font-semibold leading-tight tracking-[-0.015em]">Built for human oversight</h2>
-              <p className="mt-3 text-[15px] leading-7 text-ink-2">ICH E6(R3) asks sponsors and sites to keep qualified people responsible for trial decisions. TrialIQ is designed around that rule.</p>
-            </div>
-            <ul className="space-y-4">
-              {[
-                ["Evidence beside every claim", "Each result shows the protocol rule, the record value and the source it came from."],
-                ["A person signs off", "TrialIQ drafts. Decisions need a named person and a written reason."],
-                ["Facts and suggestions stay apart", "What the record says is labelled separately from what TrialIQ suggests."],
-                ["Synthetic data in the demo", "Every demo record is made up. Nothing here is for clinical use."],
-              ].map(([t, b]) => (
-                <li key={t} className="rounded-xl border border-line bg-white p-5"><p className="text-sm font-semibold text-ink">{t}</p><p className="mt-1 text-sm leading-6 text-ink-2">{b}</p></li>
-              ))}
-            </ul>
+        <section id="checks" className="mx-auto max-w-[1160px] px-5 py-20 md:px-8">
+          <h2 className="max-w-2xl text-[32px] font-semibold leading-tight tracking-[-0.02em]">Twelve checks across the trial</h2>
+          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-ink-2">Each one reads the source documents and names who signs it off.</p>
+          <div className="mt-10 grid gap-8 lg:grid-cols-3">
+            {groups.map((g) => (
+              <div key={g.title}>
+                <h3 className="text-sm font-semibold text-ink-2">{g.title}</h3>
+                <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-white">
+                  {g.list.map((m) => (
+                    <li key={m.id} className="flex items-baseline justify-between gap-4 px-4 py-3">
+                      <span className="text-sm font-semibold text-ink">{m.title}</span>
+                      <span className="text-right text-xs text-ink-3">{m.signOff}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </section>
 
-        <section className="bg-brand-800">
+        <section className="border-t border-line bg-white">
           <div className="mx-auto flex max-w-[1160px] flex-col items-start gap-6 px-5 py-16 md:flex-row md:items-center md:justify-between md:px-8">
             <div>
-              <h2 className="text-[26px] font-semibold tracking-[-0.015em] text-white">Open the demo and screen PT-1042 yourself</h2>
-              <p className="mt-2 text-[15px] text-white/80">It takes about a minute. The sign-in details are filled in for you.</p>
+              <h2 className="text-[26px] font-semibold tracking-[-0.015em] text-ink">Screen PT-1042 yourself</h2>
+              <p className="mt-2 text-[15px] text-ink-2">About a minute. The demo sign in is filled in for you.</p>
             </div>
-            <ButtonLink size="lg" href="/auth?demo=1" className="border-white bg-white text-brand-800 hover:bg-tint">Try the demo</ButtonLink>
+            <ButtonLink kind="primary" size="lg" href="/auth?demo=1">Open the demo</ButtonLink>
           </div>
         </section>
       </main>

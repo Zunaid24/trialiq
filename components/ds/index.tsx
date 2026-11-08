@@ -2,6 +2,7 @@
 // Every page in the app is built from these pieces, so the product looks and behaves the same everywhere.
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+export { Disclosure } from "./Disclosure";
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -144,6 +145,23 @@ export function Row({ id, title, detail, aside, status, selected, href, onClick 
   return <div className={cls}>{inner}</div>;
 }
 
+/* ---------- Progressive disclosure ---------- */
+// Segmented filter: shows one group at a time, each with its count and tone.
+export function Segmented<T extends string>({ items, value, onChange, label }: { items: { id: T; label: string; count: number; tone: Tone }[]; value: T; onChange: (id: T) => void; label: string }) {
+  return (
+    <div role="tablist" aria-label={label} className="inline-flex flex-wrap gap-1 rounded-lg border border-line bg-white p-1">
+      {items.map((t) => {
+        const on = t.id === value;
+        return (
+          <button key={t.id} role="tab" aria-selected={on} onClick={() => onChange(t.id)} disabled={!t.count}
+            className={cx("flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors disabled:opacity-40", on ? "bg-tint font-semibold text-brand-800" : "font-medium text-ink-2 hover:bg-page hover:text-ink")}>
+            <Dot tone={t.tone} />{t.label}<span className={on ? "text-primary" : "text-ink-3"}>{t.count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 /* ---------- AI ---------- */
 // The only way AI shows up: one plain status line, and boxes labelled with what TrialIQ did.
 export function AiStatus({ children, tone = "ok", action }: { children: ReactNode; tone?: Tone; action?: ReactNode }) {
