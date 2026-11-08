@@ -37,7 +37,7 @@ const modules = [
     title: "Visit & Schedule Intelligence",
     description:
       "Convert protocol visit requirements into a structured clinical workflow.",
-    href: "/dashboard/workspace/visits",
+    href: "/dashboard/workspace/visit-assistant",
     icon: CalendarDays,
     group: "Participant",
   },
@@ -53,7 +53,7 @@ const modules = [
     title: "Lab Intelligence",
     description:
       "Analyze laboratory results, abnormalities, missing values and follow-up requirements.",
-    href: "/dashboard/workspace/labs",
+    href: "/dashboard/workspace/lab-intelligence",
     icon: FlaskConical,
     group: "Data",
   },
