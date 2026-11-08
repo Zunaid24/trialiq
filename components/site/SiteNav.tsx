@@ -1,0 +1,34 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { ButtonLink } from "@/components/ds";
+import { Logo } from "@/components/brand/Logo";
+
+export default function SiteNav() {
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user && !data.user.is_anonymous)));
+  }, []);
+  return (
+    <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-[1160px] items-center gap-6 px-5 md:px-8">
+        <Link href="/" className="flex items-center" aria-label="TrialIQ home"><Logo size={26} /></Link>
+        <nav aria-label="Site" className="hidden flex-1 items-center gap-6 text-sm font-medium text-ink-2 md:flex">
+          <Link href="/#compare" className="hover:text-ink">Before and after</Link>
+          <Link href="/#how" className="hover:text-ink">How the AI works</Link>
+          <Link href="/#checks" className="hover:text-ink">Checks</Link>
+          <Link href="/#why" className="hover:text-ink">Why TrialIQ</Link>
+        </nav>
+        <div className="ml-auto flex items-center gap-2">
+          {signedIn ? <ButtonLink kind="primary" size="sm" href="/dashboard">Open workspace</ButtonLink> : <>
+            <ButtonLink size="sm" href="/auth" className="hidden sm:inline-flex">Sign in</ButtonLink>
+            <ButtonLink kind="primary" size="sm" href="/auth?demo=1">Try the demo</ButtonLink>
+          </>}
+        </div>
+      </div>
+    </header>
+  );
+}

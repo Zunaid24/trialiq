@@ -1,22 +1,87 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowRight, Check, CheckCircle2, Clock3, Loader2, Search, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AiBox, Button, Card, Empty, Field, Loading, Notice, Page, PageHeader, Row, StatusPill, Tabs, Textarea, ago } from "@/components/ds";
 
-type Item={id:string;priority:string;type:string;title:string;summary:string|null;status:string;confidence:number|null;createdAt:string};
-export default function ReviewQueuePage(){
- const [items,setItems]=useState<Item[]>([]); const [loading,setLoading]=useState(true); const [query,setQuery]=useState(""); const [priority,setPriority]=useState("ALL"); const [busy,setBusy]=useState("");
- async function load(){setLoading(true);const r=await fetch("/api/dashboard",{cache:"no-store"});const x=await r.json();if(r.ok&&x.success)setItems((x.data.actions||[]).map((a:any)=>({id:a.id,priority:a.priority,type:a.type,title:a.title,summary:null,status:"open",confidence:null,createdAt:new Date().toISOString()})));setLoading(false);}
- useEffect(()=>{load();},[]);
- async function resolve(id:string){setBusy(id);await fetch(`/api/findings/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"resolve"})});setItems(v=>v.filter(x=>x.id!==id));setBusy("");}
- const filtered=useMemo(()=>items.filter(x=>(priority==="ALL"||x.priority===priority)&&(!query||`${x.title} ${x.type}`.toLowerCase().includes(query.toLowerCase()))),[items,priority,query]);
- const high=items.filter(x=>x.priority==="HIGH").length;
- if(loading)return <main className="flex min-h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-700"/> <span className="ml-3 text-sm text-slate-500">Loading review queue…</span></main>;
- return <main className="min-h-screen bg-slate-50"><div className="mx-auto max-w-6xl p-6 md:p-10"><header className="mb-8"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700"><ShieldAlert size={15}/>Review Queue</div><h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Work the decisions, not the data.</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Every unresolved finding is persisted to your workspace. Review evidence, resolve the item, and watch review pressure fall on the dashboard.</p></header>
- <section className="grid gap-4 sm:grid-cols-3"><Stat label="Open findings" value={items.length}/><Stat label="High priority" value={high} danger/><Stat label="Standard" value={items.length-high}/></section>
- <section className="mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between"><div className="relative max-w-md flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search findings…" className="w-full rounded-lg border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-300"/></div><div className="flex gap-1 rounded-lg bg-slate-100 p-1">{["ALL","HIGH","MEDIUM"].map(x=><button key={x} onClick={()=>setPriority(x)} className={`rounded-md px-3 py-2 text-xs font-semibold ${priority===x?"bg-white text-blue-700 shadow-sm":"text-slate-500"}`}>{x}</button>)}</div></div>
- {filtered.length?<div className="divide-y divide-slate-100">{filtered.map(x=><article key={x.id} className="flex flex-col gap-4 p-5 md:flex-row md:items-center"><div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${x.priority==="HIGH"?"bg-red-50 text-red-600":"bg-blue-50 text-blue-700"}`}>{x.priority==="HIGH"?<AlertCircle size={18}/>:<Clock3 size={18}/>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${x.priority==="HIGH"?"bg-red-50 text-red-700":"bg-slate-100 text-slate-600"}`}>{x.priority}</span><span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">{x.type}</span></div><h2 className="mt-2 font-semibold text-slate-950">{x.title}</h2></div><div className="flex items-center gap-2"><Link href="/dashboard/clinical-intelligence" className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700">Inspect <ArrowRight size={13}/></Link><button disabled={busy===x.id} onClick={()=>resolve(x.id)} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-800 disabled:opacity-50">{busy===x.id?<Loader2 size={13} className="animate-spin"/>:<Check size={13}/>}Resolve</button></div></article>)}</div>:<div className="px-6 py-16 text-center"><CheckCircle2 size={38} className="mx-auto text-emerald-500"/><h2 className="mt-4 text-lg font-semibold text-slate-950">Review queue is clear</h2><p className="mt-1 text-sm text-slate-500">New evidence will appear here when TrialIQ detects something that needs a decision.</p></div>}
- </section></div></main>;
+type Item = { id: string; priority: string; type: string; title: string; summary: string | null; createdAt: string; participantCode: string | null };
+
+export default function ReviewPage() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState("");
+  const [filter, setFilter] = useState<"all" | "high">("all");
+
+  useEffect(() => {
+    fetch("/api/dashboard", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((x) => { if (x.success) { setItems(x.data.actions || []); setSelected(x.data.actions?.[0]?.id || ""); } })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const list = useMemo(() => items.filter((x) => filter === "all" || x.priority === "HIGH"), [items, filter]);
+  const item = items.find((x) => x.id === selected);
+  const high = items.filter((x) => x.priority === "HIGH").length;
+  const ready = reason.trim().length >= 5;
+
+  async function decide(action: "resolve" | "dismiss") {
+    if (!item || !ready) return;
+    setBusy(true);
+    const r = await fetch(`/api/findings/${item.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, note: reason.trim() }) });
+    setBusy(false);
+    if (!r.ok) { setDone("Could not save. Try again."); return; }
+    const rest = items.filter((x) => x.id !== item.id);
+    setItems(rest); setSelected(rest[0]?.id || ""); setReason("");
+    setDone(`${action === "resolve" ? "Confirmed" : "Dismissed"} and logged with your reason.`);
+  }
+
+  return (
+    <Page>
+      <div className="space-y-6">
+        <PageHeader title="Review" lead="TrialIQ drafts findings. A person signs each one off, and the reason is saved to the audit trail." />
+        {done && <Notice tone={done.startsWith("Could") ? "no" : "ok"}>{done}</Notice>}
+        {loading ? <Loading label="Loading review" /> : items.length === 0 ? (
+          <Empty title="Nothing is waiting for sign-off" body="Findings from every check arrive here. Run a check on a participant to see how sign-off works." />
+        ) : (
+          <>
+            <Tabs label="Filter findings" value={filter} onChange={setFilter} items={[{ id: "all", label: "All", count: items.length }, { id: "high", label: "High priority", count: high }]} />
+            <div className="flex flex-col items-start gap-6 lg:flex-row">
+              <Card as="div" className="w-full min-w-0 flex-1 divide-y divide-line overflow-hidden">
+                {list.map((x) => (
+                  <Row key={x.id} title={x.title} detail={`${x.type}${x.participantCode ? ` for ${x.participantCode}` : ""}, ${ago(x.createdAt)}`} selected={x.id === selected}
+                    onClick={() => { setSelected(x.id); setReason(""); setDone(""); }}
+                    status={<StatusPill tone={x.priority === "HIGH" ? "no" : "rev"}>{x.priority === "HIGH" ? "High" : "Review"}</StatusPill>} />
+                ))}
+                {list.length === 0 && <p className="px-4 py-6 text-sm text-ink-2">No high priority findings.</p>}
+              </Card>
+
+              {item && (
+                <Card as="aside" className="w-full shrink-0 space-y-5 p-6 lg:sticky lg:top-6 lg:w-[400px]" aria-label="Sign-off">
+                  <div>
+                    <div className="flex items-center gap-2"><StatusPill tone={item.priority === "HIGH" ? "no" : "rev"}>{item.priority === "HIGH" ? "High priority" : "To review"}</StatusPill><span className="text-xs text-ink-3">{item.type}</span></div>
+                    <h2 className="mt-2 text-lg font-semibold leading-snug text-ink">{item.title}</h2>
+                  </div>
+                  {item.summary && <AiBox label="TrialIQ read">{item.summary}</AiBox>}
+                  {item.participantCode && <Link href={`/dashboard/participants/${encodeURIComponent(item.participantCode)}`} className="inline-block text-sm font-semibold text-primary hover:underline">Open {item.participantCode} evidence</Link>}
+                  <div className="space-y-3 border-t border-line pt-4">
+                    <Field label="Reason for your decision" htmlFor="reason" hint={ready ? undefined : "Required. At least a few words, so an auditor can follow the decision."}>
+                      <Textarea id="reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="For example: checked against the source lab report, value confirmed." />
+                    </Field>
+                    <div className="grid grid-cols-[1fr_auto] gap-2.5">
+                      <Button kind="primary" disabled={busy || !ready} onClick={() => decide("resolve")}>{busy ? "Saving" : "Confirm finding"}</Button>
+                      <Button disabled={busy || !ready} onClick={() => decide("dismiss")}>Dismiss</Button>
+                    </div>
+                    <p className="text-xs text-ink-3">Saved with your name, the time and your reason.</p>
+                  </div>
+                </Card>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </Page>
+  );
 }
-function Stat({label,value,danger=false}:{label:string;value:number;danger?:boolean}){return <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{label}</p><p className={`mt-1 text-3xl font-semibold ${danger&&value?"text-red-600":"text-slate-950"}`}>{value}</p></div>}

@@ -10,7 +10,7 @@ body {
   padding: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Inter, Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
 
 * {
@@ -18,6 +18,23 @@ body {
 }
 
 @theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-tint: var(--tint);
+  --color-soft: var(--soft);
+  --color-page: var(--page);
+  --color-line-strong: var(--line-strong);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-no: var(--state-no);
+  --color-no-bg: var(--state-no-bg);
+  --color-rev: var(--state-rev);
+  --color-rev-bg: var(--state-rev-bg);
+  --color-ok: var(--state-ok);
+  --color-ok-bg: var(--state-ok-bg);
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -67,47 +84,62 @@ body {
 }
 
 :root {
-  --background: #F8FAFC;
-  --foreground: #0F172A;
+  /* TrialIQ v3: soft grey page, white cards, one mid-tone cobalt. Status colours only mean status. */
+  --ink: #1A1F2E;
+  --ink-2: #475467;
+  --ink-3: #6B7588;
+  --line: #E4E8EF;
+  --line-strong: #CDD3DE;
+  --page: #F5F7FA;
+  --surface: #F5F7FA;
+  --tint: #EEF3FC;
+  --soft: #D9E5F8;
+  --brand-700: #2552AE;
+  --brand-800: #1E4590;
+  --state-no: #C23B22;
+  --state-no-bg: #FDF1EE;
+  --state-rev: #B05A07;
+  --state-rev-bg: #FEF6E7;
+  --state-ok: #11805A;
+  --state-ok-bg: #EBF7F1;
+
+  --background: var(--page);
+  --foreground: var(--ink);
   --card: #FFFFFF;
-  --card-foreground: #0F172A;
+  --card-foreground: var(--ink);
   --popover: #FFFFFF;
-  --popover-foreground: #0F172A;
-  --primary: #1D4ED8;
+  --popover-foreground: var(--ink);
+  --primary: #2F66D0;
   --primary-foreground: #FFFFFF;
-  --secondary: #F1F5F9;
-  --secondary-foreground: #0F172A;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-  --accent: #EFF6FF;
-  --accent-foreground: #1D4ED8;
-  --destructive: #DC2626;
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #1D4ED8;
-  --chart-1: #1D4ED8;
-  --chart-2: #0F172A;
-  --chart-3: #64748B;
-  --chart-4: #B45309;
-  --chart-5: #CBD5E1;
-  --radius: 0.625rem;
+  --secondary: #FFFFFF;
+  --secondary-foreground: var(--ink);
+  --muted: var(--page);
+  --muted-foreground: var(--ink-2);
+  --accent: var(--tint);
+  --accent-foreground: var(--brand-800);
+  --destructive: var(--state-no);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: #8DADEA;
+  --chart-1: #2F66D0;
+  --chart-2: #8DADEA;
+  --chart-3: var(--ink-3);
+  --chart-4: var(--state-rev);
+  --chart-5: var(--line);
+  --radius: 0.5rem;
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #0F172A;
-  --sidebar-primary: #1D4ED8;
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: #2F66D0;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EFF6FF;
-  --sidebar-accent-foreground: #1D4ED8;
-  --sidebar-border: #E2E8F0;
-  --sidebar-ring: #1D4ED8;
-
-  /* Brand accent (blue) — aligned with the landing page */
-  --brand: #1D4ED8;
-  --brand-strong: #1E40AF;
+  --sidebar-accent: var(--tint);
+  --sidebar-accent-foreground: var(--brand-800);
+  --sidebar-border: var(--line);
+  --sidebar-ring: #8DADEA;
+  --brand: #2F66D0;
+  --brand-strong: #2552AE;
   --brand-foreground: #FFFFFF;
-
-  /* Safety / signal accent (amber) — reserved for warnings and flagged items */
-  --signal: #B45309;
-  --signal-foreground: #FBF0E4;
+  --signal: var(--state-rev);
+  --signal-foreground: var(--state-rev-bg);
 }
 
 .dark {
@@ -155,3 +187,11 @@ body {
     @apply font-sans;
   }
 }
+/* Horizontal scroll areas (tabs, wide tables) still scroll by touch and trackpad, without a visible bar. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Landing hero: a soft band that sweeps the result card, as if TrialIQ is reading it. */
+@keyframes hero-scan { 0% { top: -4rem; } 100% { top: 100%; } }
+.hero-scan { animation: hero-scan 3.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .hero-scan { animation: none; display: none; } }

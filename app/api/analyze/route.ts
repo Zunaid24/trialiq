@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { analyzeClinicalTrial } from "@/lib/gemini";
 import { addClinicalAuditMetadata } from "@/lib/clinicalAudit";
 import { hardenClinicalOutput } from "@/lib/clinicalOutputGuardrails";
+import { createClient } from "@/lib/supabase/server";
+import { persistModuleRun } from "@/lib/persistModuleRun";
 
 export async function POST(req: Request) {
   try {
-    const { protocol, participant } = await req.json();
+    const { protocol, participant, participantCode } = await req.json();
 
     if (!protocol || !participant) {
       return NextResponse.json(
@@ -23,7 +25,15 @@ export async function POST(req: Request) {
       "Eligibility Screening"
     );
 
-    return NextResponse.json({ success: true, result });
+    const supabase = await createClient();
+    const failed = (result.criteriaEvaluation?.inclusion ?? []).concat(result.criteriaEvaluation?.exclusion ?? []).filter((c: any) => /not met/i.test(String(c.status))).length;
+    const runId = await persistModuleRun(supabase, "Eligibility Screening", result, {
+      participantCode: participantCode || result.participantId || null,
+      title: `${participantCode || result.participantId || "Participant"}: ${failed ? `${failed} criteria not met` : "eligibility checked"}`,
+      status: failed ? "Not Decision-Ready" : "Review Required",
+    });
+
+    return NextResponse.json({ success: true, result, runId });
   } catch (error) {
     console.error("Analyze API Error:", error);
 
