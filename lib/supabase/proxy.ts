@@ -56,7 +56,7 @@ export async function updateSession(request: NextRequest) {
 
   // Only protected dashboard routes are redirected. API routes and public
   // pages still receive the refreshed cookies without being redirected.
-  if (!user && path.startsWith("/dashboard")) {
+  if (!user && (path.startsWith("/dashboard") || path.startsWith("/test.html"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth";
     url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;

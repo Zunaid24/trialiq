@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Card, Loading, Page, PageHeader, Row, StatusPill, ago, toneFor } from "@/components/ds";
 
 type Item = { code: string; title: string; status: string; at: string };
 
@@ -17,24 +17,21 @@ export default function ParticipantsPage() {
     })();
   }, []);
   const list = items ?? [];
-  const hasDemo = list.some((i) => i.code === "PT-1042");
   return (
-    <div className="max-w-4xl px-9 pb-12 pt-8">
-      <h1 className="text-[28px] font-semibold tracking-[-0.015em]">Participants</h1>
-      <p className="mt-1 text-[15px] text-ink-2">Everyone in screening or on study at your site, with what blocks their next decision.</p>
-      <ul className="mt-6">
-        {list.map((i) => (
-          <li key={i.code}><Link href={`/dashboard/participants/${i.code}`} className="grid grid-cols-[110px_1fr_auto] items-center gap-4 border-t border-line px-3 py-3.5 hover:bg-surface">
-            <span className="font-mono text-[13px]">{i.code}</span><span className="truncate text-sm">{i.title}</span><span className="text-xs text-ink-3">{new Date(i.at).toLocaleDateString()}</span>
-          </Link></li>
-        ))}
-        {items && !hasDemo && (
-          <li><Link href="/dashboard/participants/PT-1042" className="grid grid-cols-[110px_1fr_auto] items-center gap-4 border-t border-line px-3 py-3.5 hover:bg-surface">
-            <span className="font-mono text-[13px]">PT-1042</span><span className="text-sm text-ink-2">Demo participant, eligibility not checked yet</span><span className="text-xs text-ink-3">Demo</span>
-          </Link></li>
+    <Page>
+      <div className="space-y-6">
+        <PageHeader title="Participants" lead="Everyone in screening or on study at your site, with what blocks their next decision." />
+        {!items ? <Loading label="Loading participants" /> : (
+          <Card as="div" className="divide-y divide-line overflow-hidden">
+            {list.map((i) => (
+              <Row key={i.code} id={i.code} href={`/dashboard/participants/${i.code}`} title={i.title} detail={`Last eligibility check ${ago(i.at)}`} status={<StatusPill tone={toneFor(i.title)}>{/not met/i.test(i.title) ? "Not eligible" : "In screening"}</StatusPill>} />
+            ))}
+            {!list.some((i) => i.code === "PT-1042") && (
+              <Row id="PT-1042" href="/dashboard/participants/PT-1042" title="Synthetic demo participant" detail="Eligibility not checked yet" status={<StatusPill tone="neutral">Not checked</StatusPill>} />
+            )}
+          </Card>
         )}
-      </ul>
-      {!items && <p className="mt-6 text-sm text-ink-3">Loading…</p>}
-    </div>
+      </div>
+    </Page>
   );
 }
