@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ClipboardCheck, FileText, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight, CheckCheck, ListChecks, Sparkles, BrainCircuit } from "lucide-react";
+import { LayoutGrid, Users, ListChecks, FileText, ShieldCheck, BarChart3, Settings, Bell, Search, LogOut, X, ArrowRight, CheckCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { AUTH_DISABLED } from "@/lib/authMode";
 
-type MenuItem = { title: string; href: string; icon: typeof LayoutDashboard };
+type MenuItem = { title: string; href: string; icon: typeof LayoutGrid; match?: string[] };
 type SearchResult = { title: string; type: string; href: string; detail?: string };
 type Notification = { id: string; type: string; title: string; message: string | null; href: string | null; read_at: string | null; created_at: string };
 type StudyRow = { name: string; protocol_name: string | null };
@@ -16,30 +16,27 @@ type DocumentRow = { name: string; document_type: string | null };
 type FindingRow = { title: string; summary: string | null; analysis_type: string | null };
 
 const menu: MenuItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Clinical Intelligence", href: "/dashboard/clinical-intelligence", icon: Sparkles },
-  { title: "Clinical Memory", href: "/dashboard/memory", icon: BrainCircuit },
-  { title: "Review Queue", href: "/dashboard/review-queue", icon: ListChecks },
-  { title: "Clinical Workspace", href: "/dashboard/workspace", icon: ClipboardCheck },
-  { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { title: "Reports", href: "/dashboard/reports", icon: FileText },
-  { title: "Settings", href: "/dashboard/settings", icon: Settings },
+  { title: "Today", href: "/dashboard", icon: LayoutGrid, match: ["/dashboard/memory", "/dashboard/clinical-intelligence"] },
+  { title: "Participants", href: "/dashboard/participants", icon: Users, match: ["/dashboard/workspace/eligibility", "/dashboard/workspace/patient-matching", "/dashboard/workspace/source-review", "/dashboard/workspace/lab-intelligence", "/dashboard/workspace/medications", "/dashboard/workspace/deviations", "/dashboard/workspace/adverse-events"] },
+  { title: "Review", href: "/dashboard/review-queue", icon: ListChecks },
+  { title: "Study", href: "/dashboard/study", icon: FileText, match: ["/dashboard/workspace/protocol", "/dashboard/workspace/visit-assistant", "/dashboard/workspace/safety"] },
+  { title: "Data quality", href: "/dashboard/data-quality", icon: ShieldCheck, match: ["/dashboard/workspace/reconciliation", "/dashboard/workspace/medical-coding"] },
+  { title: "Reports", href: "/dashboard/reports", icon: BarChart3, match: ["/dashboard/analytics"] },
 ];
 
 const moduleResults = [
-  { title: "Clinical Intelligence", type: "Decision Layer", href: "/dashboard/clinical-intelligence" },
-  { title: "Clinical Memory", type: "Longitudinal Layer", href: "/dashboard/memory" },
-  { title: "Protocol Intelligence", type: "Workflow", href: "/dashboard/workspace/protocol" },
-  { title: "Eligibility Screening", type: "Workflow", href: "/dashboard/workspace/eligibility" },
-  { title: "Visit Assistant", type: "Workflow", href: "/dashboard/workspace/visit-assistant" },
-  { title: "Source Review", type: "Workflow", href: "/dashboard/workspace/source-review" },
-  { title: "Lab Intelligence", type: "Workflow", href: "/dashboard/workspace/lab-intelligence" },
-  { title: "Medication Review", type: "Workflow", href: "/dashboard/workspace/medications" },
-  { title: "Protocol Deviations", type: "Workflow", href: "/dashboard/workspace/deviations" },
-  { title: "Adverse Events", type: "Workflow", href: "/dashboard/workspace/adverse-events" },
-  { title: "Safety Signal Detection", type: "Workflow", href: "/dashboard/workspace/safety" },
-  { title: "Clinical Data Reconciliation", type: "Workflow", href: "/dashboard/workspace/reconciliation" },
-  { title: "Medical Coding Intelligence", type: "Workflow", href: "/dashboard/workspace/medical-coding" },
+  { title: "Participant PT-1042", type: "Participant", href: "/dashboard/participants/PT-1042" },
+  { title: "Protocol requirements", type: "Study", href: "/dashboard/workspace/protocol" },
+  { title: "Eligibility", type: "Participant", href: "/dashboard/workspace/eligibility" },
+  { title: "Visit plan", type: "Study", href: "/dashboard/workspace/visit-assistant" },
+  { title: "Source documents", type: "Participant", href: "/dashboard/workspace/source-review" },
+  { title: "Lab results", type: "Participant", href: "/dashboard/workspace/lab-intelligence" },
+  { title: "Medications", type: "Participant", href: "/dashboard/workspace/medications" },
+  { title: "Protocol deviations", type: "Participant", href: "/dashboard/workspace/deviations" },
+  { title: "Adverse events", type: "Participant", href: "/dashboard/workspace/adverse-events" },
+  { title: "Safety signals", type: "Study", href: "/dashboard/workspace/safety" },
+  { title: "Reconciliation", type: "Data quality", href: "/dashboard/workspace/reconciliation" },
+  { title: "Medical coding", type: "Data quality", href: "/dashboard/workspace/medical-coding" },
 ];
 
 function formatNotificationTime(value: string) {
@@ -61,6 +58,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   async function signOut() { const supabase = createClient(); await supabase.auth.signOut(); router.replace("/auth"); }
   function clearSearch() { setQuery(""); setResults([]); setSearchOpen(false); }
   const unreadCount = notifications.filter((item) => !item.read_at).length;
-  if (!ready) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><div className="text-sm font-medium text-slate-500">Loading your TrialIQ workspace…</div></div>;
-  return (<div className="flex h-screen overflow-hidden bg-background"><aside className="fixed inset-y-0 left-0 z-40 flex h-screen w-72 shrink-0 flex-col border-r border-border bg-card"><div className="shrink-0 border-b border-border px-6 py-6"><Link href="/" className="flex w-fit items-center gap-2.5 font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80" aria-label="TrialIQ AI home"><span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-700 font-mono text-[11px] font-medium text-white">iq</span><span className="text-base font-semibold">TrialIQ AI</span><span className="ml-0.5 rounded border border-slate-300 px-1.5 py-0.5 font-mono text-[9px] font-medium text-slate-500">MVP</span></Link></div><nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">{menu.map((item) => { const Icon = item.icon; const isActive = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href); return <Link key={item.title} href={item.href} className={`flex items-center gap-3.5 rounded-lg px-4 py-2.5 text-sm font-medium transition ${isActive ? "bg-blue-50 text-blue-700" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={18} />{item.title}</Link>; })}</nav><div className="shrink-0 border-t border-border bg-card p-4"><button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-red-50 hover:text-red-700"><LogOut size={18} />Sign out</button></div></aside><div className="ml-72 flex min-w-0 flex-1 flex-col overflow-hidden"><header className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b border-border bg-card px-8 py-4"><div ref={searchRef} className="relative w-full max-w-xl"><div className={`flex w-full items-center gap-3 rounded-lg border bg-secondary px-4 py-3 text-sm transition ${searchOpen ? "border-blue-300 ring-2 ring-blue-50" : "border-border focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-50"}`}><Search size={17} className="shrink-0 text-muted-foreground"/><input value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => query.trim() && setSearchOpen(true)} onKeyDown={(event) => { if (event.key === "Escape") clearSearch(); if (event.key === "Enter" && results[0]) router.push(results[0].href); }} aria-label="Search TrialIQ" placeholder="Search participants, protocols, documents, findings…" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"/>{searching&&<span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-300 border-t-blue-700"/>}{!searching&&query&&<button onClick={clearSearch} className="rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Clear search"><X size={15}/></button>}</div>{searchOpen&&query.trim()&&<div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"><div className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Search results</div>{results.length>0?results.map((result)=><Link key={`${result.type}-${result.title}-${result.href}`} href={result.href} onClick={()=>setSearchOpen(false)} className="flex items-center justify-between gap-4 px-4 py-3 transition hover:bg-slate-50"><div className="min-w-0"><p className="truncate text-sm font-medium text-slate-900">{result.title}</p><p className="mt-0.5 truncate text-xs text-slate-500">{result.type}{result.detail?` · ${result.detail}`:""}</p></div><ArrowRight size={15} className="shrink-0 text-slate-300"/></Link>):!searching?<div className="px-4 py-6 text-center"><p className="text-sm font-medium text-slate-700">No matches found</p><p className="mt-1 text-xs text-slate-500">Try a participant ID, study name, document or finding.</p></div>:null}<div className="border-t border-slate-100 bg-slate-50 px-4 py-2 text-[11px] text-slate-400">Searches your TrialIQ workspace and workflows</div></div>}</div><div className="ml-8 flex shrink-0 items-center gap-4"><div ref={notificationRef} className="relative"><button onClick={()=>{setNotificationOpen((open)=>!open);if(!notificationOpen)loadNotifications();}} className={`relative rounded-lg border p-2.5 transition ${notificationOpen?"border-blue-300 bg-blue-50 text-blue-700":"border-border text-muted-foreground hover:text-foreground"}`} aria-label={`Notifications${unreadCount?`, ${unreadCount} unread`:""}`} aria-expanded={notificationOpen}><Bell size={17}/>{unreadCount>0&&<span className="absolute -right-1.5 -top-1.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 font-mono text-[9px] font-bold text-white ring-2 ring-card">{unreadCount>9?"9+":unreadCount}</span>}</button>{notificationOpen&&<div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"><div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5"><div><h3 className="text-sm font-semibold text-slate-950">Notifications</h3><p className="mt-0.5 text-xs text-slate-500">{unreadCount?`${unreadCount} require${unreadCount===1?"s":""} your attention`:"You're all caught up"}</p></div>{unreadCount>0&&<button onClick={markAllNotificationsRead} className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800"><CheckCheck size={14}/>Mark all read</button>}</div><div className="max-h-[420px] overflow-y-auto">{notificationsLoading?<div className="px-4 py-8 text-center text-sm text-slate-500">Loading notifications…</div>:notifications.length>0?notifications.map((item)=><button key={item.id} onClick={()=>markNotificationRead(item.id,item.href)} className={`flex w-full gap-3 border-b border-slate-100 px-4 py-3.5 text-left transition hover:bg-slate-50 ${!item.read_at?"bg-blue-50/50":""}`}><span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.read_at?"bg-slate-200":"bg-blue-600"}`}/><span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-900">{item.title}</span>{item.message&&<span className="mt-1 block line-clamp-2 text-xs leading-5 text-slate-500">{item.message}</span>}<span className="mt-1 block text-[10px] text-slate-400">{formatNotificationTime(item.created_at)}</span></span></button>):<div className="px-4 py-8 text-center"><Bell size={20} className="mx-auto text-slate-300"/><p className="mt-2 text-sm text-slate-500">No notifications yet</p></div>}</div></div>}</div><div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-semibold text-foreground">{name}</p><p className="max-w-44 truncate text-xs text-muted-foreground">{email}</p></div><div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 text-sm font-semibold text-white">{name.slice(0,1).toUpperCase()}</div></div></div></header><main className="min-h-0 flex-1 overflow-y-auto">{children}</main></div></div>);
+  if (!ready) return <div className="flex min-h-screen items-center justify-center bg-white"><p className="text-sm text-ink-3">Opening TrialIQ…</p></div>;
+  const isActive = (item: MenuItem) => item.href === "/dashboard" ? pathname === "/dashboard" || (item.match ?? []).some((m) => pathname.startsWith(m)) : pathname.startsWith(item.href) || (item.match ?? []).some((m) => pathname.startsWith(m));
+  const initials = (name || "TrialIQ").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <div className="flex h-screen overflow-hidden bg-white text-ink">
+      <aside className="flex w-56 shrink-0 flex-col border-r border-line bg-white px-3.5 py-5">
+        <Link href="/dashboard" className="mb-5 flex items-center gap-2.5 px-2" aria-label="TrialIQ home"><span className="h-6 w-6 rounded-md bg-primary" /><span className="text-base font-semibold">TrialIQ</span></Link>
+        <div className="mb-4 rounded-lg border border-line px-2.5 py-2"><p className="text-xs font-medium">TRIALIQ-101</p><p className="text-xs text-ink-3">Advanced NSCLC · Phase II</p></div>
+        <nav className="space-y-0.5">{menu.map((item) => { const Icon = item.icon; const active = isActive(item); return <Link key={item.title} href={item.href} aria-current={active ? "page" : undefined} className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${active ? "bg-tint font-medium text-ink" : "text-ink-2 hover:bg-surface hover:text-ink"}`}><Icon size={17} strokeWidth={1.75} className={active ? "text-ink" : "text-ink-3"} />{item.title}</Link>; })}</nav>
+        <div className="mt-auto space-y-0.5">
+          <Link href="/dashboard/settings" className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm ${pathname.startsWith("/dashboard/settings") || pathname.startsWith("/dashboard/team") ? "bg-tint font-medium" : "text-ink-2 hover:bg-surface"}`}><Settings size={17} strokeWidth={1.75} className="text-ink-3" />Settings</Link>
+          <div className="flex items-center gap-2.5 px-2 pt-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-surface text-[11px] font-semibold text-ink-2">{initials}</span><div className="min-w-0 flex-1"><p className="truncate text-[13px] font-medium">{name}</p><p className="truncate text-xs text-ink-3">{email || "Testing session"}</p></div>{!AUTH_DISABLED && <button onClick={signOut} className="rounded p-1 text-ink-3 hover:text-ink" aria-label="Sign out"><LogOut size={15} /></button>}</div>
+        </div>
+      </aside>
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-14 shrink-0 items-center gap-4 border-b border-line px-9">
+          <div className="flex-1" />
+          <div ref={searchRef} className="relative w-72">
+            <div className="flex items-center gap-2 rounded-md border border-line px-3 py-1.5 focus-within:border-ink-3"><Search size={15} className="text-ink-3" /><input value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => query.trim() && setSearchOpen(true)} onKeyDown={(event) => { if (event.key === "Escape") clearSearch(); if (event.key === "Enter" && results[0]) router.push(results[0].href); }} aria-label="Search TrialIQ" placeholder="Search" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-3" />{searching && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-ink-2" />}{!searching && query && <button onClick={clearSearch} className="text-ink-3 hover:text-ink" aria-label="Clear search"><X size={14} /></button>}</div>
+            {searchOpen && query.trim() && <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-96 overflow-hidden rounded-lg border border-line bg-white shadow-lg">{results.length > 0 ? results.map((result) => <Link key={`${result.type}-${result.title}-${result.href}`} href={result.href} onClick={() => setSearchOpen(false)} className="flex items-center justify-between gap-4 px-4 py-2.5 hover:bg-surface"><div className="min-w-0"><p className="truncate text-sm">{result.title}</p><p className="truncate text-xs text-ink-3">{result.type}{result.detail ? ` · ${result.detail}` : ""}</p></div><ArrowRight size={14} className="shrink-0 text-ink-3" /></Link>) : !searching ? <p className="px-4 py-5 text-sm text-ink-2">No matches. Try a participant ID or document name.</p> : null}</div>}
+          </div>
+          <div ref={notificationRef} className="relative">
+            <button onClick={() => { setNotificationOpen((open) => !open); if (!notificationOpen) loadNotifications(); }} className="relative rounded-md border border-line p-2 text-ink-2 hover:text-ink" aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`} aria-expanded={notificationOpen}><Bell size={16} />{unreadCount > 0 && <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-no" />}</button>
+            {notificationOpen && <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-[360px] overflow-hidden rounded-lg border border-line bg-white shadow-lg"><div className="flex items-center justify-between border-b border-line px-4 py-3"><p className="text-sm font-medium">Notifications</p>{unreadCount > 0 && <button onClick={markAllNotificationsRead} className="inline-flex items-center gap-1 text-xs font-medium text-primary"><CheckCheck size={13} />Mark all read</button>}</div><div className="max-h-[400px] overflow-y-auto">{notificationsLoading ? <p className="px-4 py-6 text-sm text-ink-3">Loading…</p> : notifications.length > 0 ? notifications.map((item) => <button key={item.id} onClick={() => markNotificationRead(item.id, item.href)} className="flex w-full gap-3 border-b border-line px-4 py-3 text-left hover:bg-surface"><span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${item.read_at ? "bg-line" : "bg-primary"}`} /><span className="min-w-0 flex-1"><span className="block text-sm">{item.title}</span>{item.message && <span className="mt-0.5 block line-clamp-2 text-xs text-ink-2">{item.message}</span>}<span className="mt-1 block text-[11px] text-ink-3">{formatNotificationTime(item.created_at)}</span></span></button>) : <p className="px-4 py-6 text-sm text-ink-3">Nothing new.</p>}</div></div>}
+          </div>
+        </header>
+        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </div>
+  );
 }
