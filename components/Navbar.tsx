@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { AUTH_DISABLED } from "@/lib/authMode";
 
 export default function Navbar() {
   const [user, setUser] = useState<{ email?: string; name?: string } | null>(null);
@@ -58,7 +59,7 @@ export default function Navbar() {
               {user.name}
             </Link>
           ) : (
-            <Link href="/auth" className="hidden rounded-md border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-500 hover:text-slate-900 sm:inline-flex">Sign in</Link>
+            AUTH_DISABLED ? null : <Link href="/auth" className="hidden rounded-md border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-500 hover:text-slate-900 sm:inline-flex">Sign in</Link>
           )}
           <Link href="/dashboard" className="group inline-flex items-center gap-1.5 rounded-md bg-blue-700 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-800 hover:shadow-lg">
             {user ? "Open Workspace" : "Launch Workspace"}
