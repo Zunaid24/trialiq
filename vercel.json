@@ -5,6 +5,12 @@
   },
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "trialiq-ai.vercel.app" }],
+      "destination": "https://trial-iq.vercel.app/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "trialiq-ai.vercel.app" }],
       "destination": "https://trial-iq.vercel.app/:path*",
