@@ -68,7 +68,11 @@ Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). The one ru
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+GNU Affero General Public License v3.0 — see [LICENSE](LICENSE).
+
+You may use, study, change and redistribute TrialIQ, including commercially. If you distribute a modified version, or run a modified version as a network service, your changes must be released under the same licence. For a licence without that obligation, get in touch.
+
+TrialIQ was previously published under the MIT licence. Copies obtained under MIT stay under MIT — that grant cannot be withdrawn. Everything from this version on is AGPL-3.0.
 
 ## Built with
 

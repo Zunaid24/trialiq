@@ -57,4 +57,4 @@ Do not put real study or patient material in an issue. Reproduce it with synthet
 
 ## Licence and conduct
 
-TrialIQ is MIT licensed; by contributing you agree your contribution is licensed under the same terms. By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+TrialIQ is licensed under AGPL-3.0; by contributing you agree your contribution is licensed under the same terms. By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
